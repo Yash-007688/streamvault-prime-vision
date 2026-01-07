@@ -1,0 +1,10 @@
+🏁 TL;DR — Quick Checklist
+
+✅ Better title & tagline
+✅ Eye-catching badges
+✅ Hero image / GIF
+✅ Clear setup steps
+✅ Friendly how-to use
+✅ Tech stack icons
+✅ Contributing guide
+✅ Contact & license
