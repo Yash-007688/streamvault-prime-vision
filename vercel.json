@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/video-info.ts": {
+      "maxDuration": 60
+    },
+    "api/video-download.ts": {
+      "maxDuration": 60
+    }
+  }
+}

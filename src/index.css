@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 29% 8%;
+    --foreground: 0 0% 96%;
+
+    --card: 240 20% 12%;
+    --card-foreground: 0 0% 96%;
+
+    --popover: 240 20% 12%;
+    --popover-foreground: 0 0% 96%;
+
+    --primary: 244 100% 69%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 20% 16%;
+    --secondary-foreground: 0 0% 96%;
+
+    --muted: 240 15% 18%;
+    --muted-foreground: 240 10% 60%;
+
+    --accent: 247 100% 74%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 15% 20%;
+    --input: 240 15% 20%;
+    --ring: 244 100% 69%;
+
+    --radius: 1.25rem;
+
+    --sidebar-background: 240 25% 10%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 244 100% 69%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 20% 16%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 240 15% 20%;
+    --sidebar-ring: 244 100% 69%;
+
+    /* Custom tokens */
+    --glass: 240 20% 100% / 0.05;
+    --glass-border: 240 20% 100% / 0.1;
+    --glow-primary: 244 100% 69% / 0.4;
+    --glow-accent: 247 100% 74% / 0.3;
+    --gradient-start: 244 100% 69%;
+    --gradient-end: 280 80% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-card/50 backdrop-blur-xl border border-white/10 rounded-[var(--radius)];
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_30px_hsl(var(--glow-primary))];
+  }
+
+  .glow-text {
+    text-shadow: 0 0 40px hsl(var(--glow-primary));
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  }
+
+  .animated-gradient-bg {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--background)) 0%,
+      hsl(240 25% 12%) 30%,
+      hsl(244 40% 15%) 60%,
+      hsl(var(--background)) 100%
+    );
+    background-size: 400% 400%;
+    animation: gradient-shift 15s ease infinite;
+  }
+
+  .hero-glow {
+    position: relative;
+  }
+
+  .hero-glow::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(
+      ellipse,
+      hsl(var(--glow-primary)) 0%,
+      hsl(var(--glow-accent)) 30%,
+      transparent 70%
+    );
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
