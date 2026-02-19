@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Search, Download, Coins, Info, AlertCircle } from "lucide-react";
+import { Search, Download, Coins, Info, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -128,6 +128,27 @@ const Dashboard = () => {
     }
   };
 
+  const handleDownloadThumbnail = async () => {
+    if (!videoInfo?.thumbnail) return;
+    
+    try {
+      const response = await fetch(videoInfo.thumbnail);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `${videoInfo.title || "thumbnail"}_thumbnail.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      toast.success("Thumbnail downloaded!");
+    } catch {
+      // Fallback: open in new tab
+      window.open(videoInfo.thumbnail, '_blank');
+    }
+  };
+
   const currentCost = TOKEN_COST[quality] || 1;
 
   return (
@@ -243,14 +264,24 @@ const Dashboard = () => {
                     </div>
                   )}
 
-                  <button
-                    onClick={handleDownload}
-                    disabled={downloading || tokens < currentCost}
-                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:shadow-[0_0_20px_hsl(var(--glow-primary))] disabled:opacity-50"
-                  >
-                    <Download className="h-4 w-4" />
-                    {downloading ? "Processing..." : `Download (${quality}) — ${currentCost} token${currentCost > 1 ? "s" : ""}`}
-                  </button>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={handleDownload}
+                      disabled={downloading || tokens < currentCost}
+                      className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:shadow-[0_0_20px_hsl(var(--glow-primary))] disabled:opacity-50"
+                    >
+                      <Download className="h-4 w-4" />
+                      {downloading ? "Processing..." : `Download (${quality}) — ${currentCost} token${currentCost > 1 ? "s" : ""}`}
+                    </button>
+
+                    <button
+                      onClick={handleDownloadThumbnail}
+                      className="flex items-center gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                      Thumbnail
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
