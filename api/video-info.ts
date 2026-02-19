@@ -5,7 +5,7 @@ import {
   validateYouTubeUrl,
   type YtDlpInfo,
   type SupportedQuality,
-} from "./_lib/ytdlp.ts";
+} from "./_lib/ytdlp.js";
 
 type ApiRequest = {
   method?: string;
