@@ -25,7 +25,7 @@ export type YtDlpInfo = {
   formats?: YtDlpFormat[];
 };
 
-export type SupportedQuality = "360p" | "720p" | "1080p";
+export type SupportedQuality = "360p" | "720p" | "1080p" | "2160p" | "4k";
 
 const SUPPORTED_HOSTS = new Set([
   "youtube.com",
@@ -170,7 +170,13 @@ function scoreFormat(format: YtDlpFormat, targetHeight: number): number {
 }
 
 export function pickFormatForQuality(info: YtDlpInfo, quality: SupportedQuality) {
-  const targetHeight = Number(quality.replace("p", ""));
+  let targetHeight: number;
+  if (quality === "4k") {
+    targetHeight = 2160;
+  } else {
+    targetHeight = Number(quality.replace("p", ""));
+  }
+  
   const formats = Array.isArray(info.formats) ? info.formats : [];
 
   const candidates = formats.filter((f) => isProgressive(f) && (f.height || 0) <= targetHeight);
@@ -181,7 +187,7 @@ export function pickFormatForQuality(info: YtDlpInfo, quality: SupportedQuality)
 }
 
 export function extractAvailableQualities(info: YtDlpInfo) {
-  const qualities: SupportedQuality[] = ["360p", "720p", "1080p"];
+  const qualities: SupportedQuality[] = ["360p", "720p", "1080p", "4k"];
   return qualities
     .map((quality) => {
       const format = pickFormatForQuality(info, quality);

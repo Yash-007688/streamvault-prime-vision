@@ -29,7 +29,7 @@ function setCors(res: ApiResponse) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
-const ALLOWED_QUALITIES = new Set<SupportedQuality>(["360p", "720p", "1080p"]);
+const ALLOWED_QUALITIES = new Set<SupportedQuality>(["360p", "720p", "1080p", "4k", "2160p"]);
 
 function sendError(
   res: ApiResponse,
@@ -95,6 +95,8 @@ async function tryCobaltDownload(videoId: string, quality: SupportedQuality): Pr
     "360p": "360",
     "720p": "720",
     "1080p": "1080",
+    "2160p": "2160",
+    "4k": "2160",
   };
   const targetQuality = qualityMap[quality] || "720";
   
@@ -168,7 +170,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
     const requestedQuality = (body.quality || "720p") as SupportedQuality;
     if (!ALLOWED_QUALITIES.has(requestedQuality)) {
-      return sendError(res, 400, "Invalid quality. Use 360p, 720p, or 1080p.", "INVALID_QUALITY");
+      return sendError(res, 400, "Invalid quality. Use 360p, 720p, 1080p, or 4k.", "INVALID_QUALITY");
     }
 
     let downloadUrl: string | null = null;
