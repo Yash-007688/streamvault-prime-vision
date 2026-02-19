@@ -78,8 +78,10 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Handler error:", message);
     return new Response(
-      JSON.stringify({ error: "Failed to fetch video info" }),
+      JSON.stringify({ error: `Failed to fetch video info: ${message}` }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
