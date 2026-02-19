@@ -2,7 +2,8 @@ from http.server import BaseHTTPRequestHandler
 import json
 import os
 import sys
-# Try to import requests, if not available, we might fail gracefully or use urllib
+
+# Try to import requests
 try:
     import requests
 except ImportError:
@@ -72,17 +73,19 @@ class handler(BaseHTTPRequestHandler):
             thumbnail = None
             author = "Unknown"
             
+            errors = []
+
             # 1. Try yt-dlp (Python Library)
-            # We specifically want a format with both video and audio (progressive)
-            # because we cannot merge streams in a serverless environment without ffmpeg.
             if yt_dlp:
                 try:
-                    # format: prefer best progressive mp4. If not available, try generic best.
+                    # Generic options to maximize success
                     ydl_opts = {
                         'format': f'best[ext=mp4][height<={target_height}][vcodec!=none][acodec!=none]/best[height<={target_height}]/best',
                         'quiet': True,
                         'no_warnings': True,
                         'skip_download': True,
+                        'nocheckcertificate': True,
+                        'source_address': '0.0.0.0', # Force IPv4
                     }
                     
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -97,6 +100,11 @@ class handler(BaseHTTPRequestHandler):
                             formats = info.get('formats', [])
                             # Filter for mp4, with video and audio, and height <= target
                             candidates = [f for f in formats if f.get('ext') == 'mp4' and f.get('vcodec') != 'none' and f.get('acodec') != 'none' and f.get('height', 0) <= target_height]
+                            
+                            if not candidates:
+                                # Fallback: any video+audio
+                                candidates = [f for f in formats if f.get('vcodec') != 'none' and f.get('acodec') != 'none']
+                            
                             if candidates:
                                 # Sort by height descending
                                 candidates.sort(key=lambda x: x.get('height', 0), reverse=True)
@@ -105,9 +113,9 @@ class handler(BaseHTTPRequestHandler):
                                 thumbnail = info.get('thumbnail', thumbnail)
                                 author = info.get('uploader', author)
                 except Exception as e:
-                    print(f"yt-dlp failed: {str(e)}")
+                    errors.append(f"yt-dlp error: {str(e)}")
 
-            # 2. Try Cobalt (Fallback) - Great for high quality (1080p/4k) as they handle merging
+            # 2. Try Cobalt (Fallback)
             if not download_url and requests:
                 try:
                     cobalt_endpoints = [
@@ -115,7 +123,8 @@ class handler(BaseHTTPRequestHandler):
                         "https://co.wuk.sh/api/json",
                         "https://cobalt.api.red/",
                         "https://api.wuk.sh/",
-                        "https://cobalt.tools/api/json" 
+                        "https://cobalt.tools/api/json",
+                        "https://api.douyin.wtf/api/json"
                     ]
                     
                     quality_map = {
@@ -135,8 +144,11 @@ class handler(BaseHTTPRequestHandler):
                                 "filenameStyle": "pretty",
                                 "vCodec": "h264"
                             }
-                            # Some cobalt instances use different payload keys, but standard is videoQuality
-                            resp = requests.post(endpoint, json=payload, headers={"Accept": "application/json", "User-Agent": "streamvault/1.0"}, timeout=8)
+                            headers = {
+                                "Accept": "application/json",
+                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                            }
+                            resp = requests.post(endpoint, json=payload, headers=headers, timeout=6)
                             if resp.status_code == 200:
                                 data = resp.json()
                                 if data.get('url'):
@@ -148,29 +160,37 @@ class handler(BaseHTTPRequestHandler):
                                             download_url = item.get('url')
                                             break
                                     if download_url: break
-                        except:
+                        except Exception as e:
+                            errors.append(f"Cobalt {endpoint} error: {str(e)}")
                             continue
                 except Exception as e:
-                    print(f"Cobalt failed: {str(e)}")
+                    errors.append(f"Cobalt error: {str(e)}")
 
             # 3. Try Pytube (Fallback)
             if not download_url and YouTube:
                 try:
-                    yt = YouTube(url)
-                    # Get highest resolution progressive stream (video+audio)
-                    # Usually max 720p
-                    stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+                    yt = YouTube(url, use_oauth=False, allow_oauth_cache=False)
+                    # Try getting streams
+                    streams = yt.streams.filter(progressive=True, file_extension='mp4')
+                    stream = streams.order_by('resolution').desc().first()
                     
                     if stream:
                         download_url = stream.url
                         title = yt.title or title
                         thumbnail = yt.thumbnail_url or thumbnail
                         author = yt.author or author
+                    else:
+                         # Fallback to any mp4 stream even if not progressive (might lack audio)
+                         # but better than nothing for some users
+                         stream = yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first()
+                         if stream:
+                             download_url = stream.url
                 except Exception as e:
-                    print(f"Pytube failed: {str(e)}")
+                    errors.append(f"Pytube error: {str(e)}")
 
             if not download_url:
-                return send_error(self, 422, "Could not process video: All download methods (yt-dlp, Cobalt, Pytube) failed.", "DOWNLOAD_PROCESSING_FAILED")
+                error_msg = "Could not process video. Errors: " + "; ".join(errors)
+                return send_error(self, 422, error_msg, "DOWNLOAD_PROCESSING_FAILED")
 
             response_data = {
                 "title": title,
@@ -188,5 +208,4 @@ class handler(BaseHTTPRequestHandler):
             send_success(self, response_data)
 
         except Exception as e:
-            # Catch-all for any other errors
             send_error(self, 500, f"Internal Server Error: {str(e)}", "INTERNAL_ERROR")
