@@ -1,4 +1,4 @@
-type YtDlpFormat = {
+export type YtDlpFormat = {
   format_id?: string;
   url?: string;
   ext?: string;

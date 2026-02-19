@@ -1,4 +1,5 @@
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
+// import removed – Deno.serve is built-in since Deno 1.40
+// import removed – Deno.serve is built-in since Deno 1.40
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,7 +28,8 @@ function extractVideoId(rawUrl: string): string | null {
   return null;
 }
 
-serve(async (req) => {
+// @ts-ignore – Deno is globally available in Deno runtime
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

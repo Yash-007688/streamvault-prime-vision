@@ -1,5 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,7 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TOKEN_COST: Record<string, number> = {
+export type SupportedQuality = "360p" | "720p" | "1080p" | "4k";
+
+export const TOKEN_COST: Record<SupportedQuality, number> = {
   "360p": 1, "720p": 2, "1080p": 3, "4k": 4,
 };
 
@@ -31,7 +32,7 @@ function extractVideoId(rawUrl: string): string | null {
   return null;
 }
 
-interface ClientConfig {
+export interface ClientConfig {
   name: string;
   clientName: string;
   clientVersion: string;
@@ -115,8 +116,8 @@ function parseCobaltUrl(payload: CobaltResponse): string | null {
   return null;
 }
 
-async function tryCobaltDownload(videoId: string, quality: string): Promise<string | null> {
-  const qualityMap: Record<string, string> = {
+async function tryCobaltDownload(videoId: string, quality: SupportedQuality): Promise<string | null> {
+  const qualityMap: Record<SupportedQuality, string> = {
     "360p": "360",
     "720p": "720",
     "1080p": "1080",
@@ -172,13 +173,13 @@ async function tryCobaltDownload(videoId: string, quality: string): Promise<stri
   return null;
 }
 
-interface InnertubeFormat {
+export interface InnertubeFormat {
   url?: string;
   height?: number;
   mimeType?: string;
 }
 
-interface InnertubeData {
+export interface InnertubeData {
   playabilityStatus?: {
     status?: string;
     reason?: string;
@@ -276,8 +277,8 @@ async function tryInnertubeClient(
   }
 }
 
-async function getDownloadUrl(videoId: string, quality: string): Promise<string | null> {
-  const targetHeight: Record<string, number> = {
+async function getDownloadUrl(videoId: string, quality: SupportedQuality): Promise<string | null> {
+  const targetHeight: Record<SupportedQuality, number> = {
     "360p": 360, "720p": 720, "1080p": 1080, "4k": 2160,
   };
   const target = targetHeight[quality] || 720;
@@ -296,13 +297,14 @@ async function getDownloadUrl(videoId: string, quality: string): Promise<string 
   return null;
 }
 
-serve(async (req) => {
+// @ts-ignore – Deno is a global in the Deno runtime
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = (globalThis as any).Deno?.env.get("SUPABASE_URL");
+  const supabaseServiceKey = (globalThis as any).Deno?.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
@@ -330,7 +332,8 @@ serve(async (req) => {
   }
 
   try {
-    const { url, quality = "720p", title = "" } = await req.json();
+    const { url, quality: rawQuality = "720p", title = "" } = await req.json();
+    const quality = rawQuality as SupportedQuality;
 
     const videoId = extractVideoId(url);
     if (!videoId) {
