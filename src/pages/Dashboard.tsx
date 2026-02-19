@@ -216,7 +216,7 @@ const Dashboard = () => {
                   <h3 className="font-semibold text-foreground mb-1">{videoInfo.title}</h3>
                   <div className="text-sm text-muted-foreground mb-4 flex items-center gap-2">
                     <Avatar className="h-5 w-5">
-                      <AvatarImage src={videoInfo.channel_logo || ""} alt={videoInfo.channel || videoInfo.author} />
+                      <AvatarImage src={videoInfo.channel || ""} alt={videoInfo.channel || videoInfo.author} />
                       <AvatarFallback>
                         <User className="h-3 w-3" />
                       </AvatarFallback>
