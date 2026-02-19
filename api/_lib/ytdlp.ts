@@ -1,3 +1,7 @@
+import { spawn } from "child_process";
+import path from "path";
+import fs from "fs";
+
 export type YtDlpFormat = {
   format_id?: string;
   url?: string;
@@ -33,7 +37,19 @@ const SUPPORTED_HOSTS = new Set([
 ]);
 
 const YTDLP_TIMEOUT_MS = Number(process.env.YTDLP_TIMEOUT_MS || 25000);
-const YTDLP_BIN = process.env.YTDLP_BIN || "yt-dlp";
+
+function getBinaryPath(): string {
+  if (process.env.YTDLP_BIN) return process.env.YTDLP_BIN;
+  
+  const localBinName = process.platform === "win32" ? "yt-dlp.exe" : "yt-dlp";
+  const localBinPath = path.join(process.cwd(), "bin", localBinName);
+  
+  if (fs.existsSync(localBinPath)) {
+    return localBinPath;
+  }
+  
+  return "yt-dlp";
+}
 
 export function validateYouTubeUrl(rawUrl: unknown): string | null {
   if (typeof rawUrl !== "string" || !rawUrl.trim()) return null;
@@ -76,8 +92,7 @@ export function extractVideoId(rawUrl: string): string | null {
 }
 
 export async function runYtDlpMetadata(url: string): Promise<YtDlpInfo> {
-  // Ensure we import spawn from child_process
-  // (already imported at top)
+  const binaryPath = getBinaryPath();
 
   const args = [
     "--dump-single-json",
@@ -89,7 +104,7 @@ export async function runYtDlpMetadata(url: string): Promise<YtDlpInfo> {
   ];
 
   return new Promise((resolve, reject) => {
-    const proc = spawn(YTDLP_BIN, args, {
+    const proc = spawn(binaryPath, args, {
       stdio: ["ignore", "pipe", "pipe"],
     });
 

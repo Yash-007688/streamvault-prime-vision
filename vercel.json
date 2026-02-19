@@ -1,10 +1,12 @@
 {
   "functions": {
     "api/video-info.ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "bin/**"
     },
     "api/video-download.ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "bin/**"
     }
   }
 }
