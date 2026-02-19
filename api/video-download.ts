@@ -102,11 +102,14 @@ async function tryCobaltDownload(videoId: string, quality: SupportedQuality): Pr
   
   // Try multiple cobalt API endpoints for reliability
   const endpoints = [
-    "https://api.cobalt.tools/",
+    "https://api.cobalt.tools/api/json",
     "https://co.wuk.sh/api/json",
+    "https://cobalt.api.red/",
+    "https://api.wuk.sh/",
   ];
 
   for (const endpoint of endpoints) {
+    // Try different payload structures as different instances might have slightly different requirements
     const payloads = [
       {
         url: `https://www.youtube.com/watch?v=${videoId}`,
@@ -116,10 +119,16 @@ async function tryCobaltDownload(videoId: string, quality: SupportedQuality): Pr
       },
       {
         url: `https://www.youtube.com/watch?v=${videoId}`,
+        vQuality: targetQuality,
+        filenamePattern: "classic",
+        isAudioOnly: false,
+      },
+      {
+        url: `https://www.youtube.com/watch?v=${videoId}`,
         quality: targetQuality,
         audioFormat: "best",
         filenamePattern: "classic",
-      },
+      }
     ];
 
     for (const payload of payloads) {

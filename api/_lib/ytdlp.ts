@@ -42,10 +42,19 @@ function getBinaryPath(): string {
   if (process.env.YTDLP_BIN) return process.env.YTDLP_BIN;
   
   const localBinName = process.platform === "win32" ? "yt-dlp.exe" : "yt-dlp";
-  const localBinPath = path.join(process.cwd(), "bin", localBinName);
   
-  if (fs.existsSync(localBinPath)) {
-    return localBinPath;
+  // Check multiple possible locations for the binary
+  const pathsToCheck = [
+    path.join(process.cwd(), "bin", localBinName),
+    path.join(process.cwd(), "api", "bin", localBinName),
+    path.join(process.cwd(), "..", "bin", localBinName),
+    path.join("/tmp", localBinName), // Sometimes useful in lambda environments if we downloaded it there
+  ];
+
+  for (const binPath of pathsToCheck) {
+    if (fs.existsSync(binPath)) {
+      return binPath;
+    }
   }
   
   return "yt-dlp";
