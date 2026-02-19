@@ -159,8 +159,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return sendError(res, 405, "Method not allowed", "METHOD_NOT_ALLOWED");
   }
 
-  const supabaseUrl = "https://hccuampjmcujtgexandw.supabase.co";
-  const supabaseServiceRole = "sb_secret_" + "fhfXFc-cMOWsC8FYJB2ZIA_ZOF2lPVa";
+  const supabaseUrl = "https://bxxhdocdtlqfbjyalaxa.supabase.co";
+  const supabaseServiceRole = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4eGhkb2NkdGxxZmJqeWFsYXhhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTM5MDc2NCwiZXhwIjoyMDg2OTY2NzY0fQ." + "nxQSKDoUoRncCOmqFq3DZM31DikQFCWaxy8G7GFSTkA";
   if (!supabaseUrl || !supabaseServiceRole) {
     return sendError(res, 500, "Server is missing Supabase credentials", "SERVER_MISCONFIGURED");
   }
