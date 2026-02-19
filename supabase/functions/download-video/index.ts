@@ -303,8 +303,8 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const supabaseUrl = "https://bxxhdocdtlqfbjyalaxa.supabase.co";
-  const supabaseServiceKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4eGhkb2NkdGxxZmJqeWFsYXhhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTM5MDc2NCwiZXhwIjoyMDg2OTY2NzY0fQ." + "nxQSKDoUoRncCOmqFq3DZM31DikQFCWaxy8G7GFSTkA";
+  const supabaseUrl = "https://bmqbdgzyjtthjkhcsgt.supabase.co";
+  const supabaseServiceKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtcWJkZ3p5anR0aGpoa2hjc2d0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTQ3NjE3OSwiZXhwIjoyMDg3MDUyMTc5fQ." + "-vXTIAgohakmCU5UswhnH1_7yWmi1UVOZRTYwjY6ZsM";
 
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
