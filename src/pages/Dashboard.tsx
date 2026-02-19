@@ -3,6 +3,7 @@ import { Search, Download, Info, AlertCircle, Image as ImageIcon, User } from "l
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 
 const QUALITY_OPTIONS = ["360p", "720p", "1080p", "4k"] as const;
 const FORMAT_OPTIONS = ["mp4", "mp3", "mkv"] as const;
