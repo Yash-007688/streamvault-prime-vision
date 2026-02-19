@@ -77,10 +77,9 @@ class handler(BaseHTTPRequestHandler):
             # because we cannot merge streams in a serverless environment without ffmpeg.
             if yt_dlp:
                 try:
-                    # format: best available that has both video and audio, and height <= target
-                    # we use 'best' as fallback which usually has both but might be lower quality
+                    # format: prefer best progressive mp4. If not available, try generic best.
                     ydl_opts = {
-                        'format': f'best[height<={target_height}][vcodec!=none][acodec!=none]/best',
+                        'format': f'best[ext=mp4][height<={target_height}][vcodec!=none][acodec!=none]/best[height<={target_height}]/best',
                         'quiet': True,
                         'no_warnings': True,
                         'skip_download': True,
@@ -93,6 +92,18 @@ class handler(BaseHTTPRequestHandler):
                             title = info.get('title', title)
                             thumbnail = info.get('thumbnail', thumbnail)
                             author = info.get('uploader', author)
+                        elif 'formats' in info:
+                            # Manually pick best progressive if automatic selection failed to give a direct url
+                            formats = info.get('formats', [])
+                            # Filter for mp4, with video and audio, and height <= target
+                            candidates = [f for f in formats if f.get('ext') == 'mp4' and f.get('vcodec') != 'none' and f.get('acodec') != 'none' and f.get('height', 0) <= target_height]
+                            if candidates:
+                                # Sort by height descending
+                                candidates.sort(key=lambda x: x.get('height', 0), reverse=True)
+                                download_url = candidates[0].get('url')
+                                title = info.get('title', title)
+                                thumbnail = info.get('thumbnail', thumbnail)
+                                author = info.get('uploader', author)
                 except Exception as e:
                     print(f"yt-dlp failed: {str(e)}")
 
@@ -103,7 +114,8 @@ class handler(BaseHTTPRequestHandler):
                         "https://api.cobalt.tools/api/json",
                         "https://co.wuk.sh/api/json",
                         "https://cobalt.api.red/",
-                        "https://api.wuk.sh/"
+                        "https://api.wuk.sh/",
+                        "https://cobalt.tools/api/json" 
                     ]
                     
                     quality_map = {
