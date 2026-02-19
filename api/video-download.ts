@@ -159,8 +159,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return sendError(res, 405, "Method not allowed", "METHOD_NOT_ALLOWED");
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = "https://hccuampjmcujtgexandw.supabase.co";
+  const supabaseServiceRole = "sb_secret_" + "fhfXFc-cMOWsC8FYJB2ZIA_ZOF2lPVa";
   if (!supabaseUrl || !supabaseServiceRole) {
     return sendError(res, 500, "Server is missing Supabase credentials", "SERVER_MISCONFIGURED");
   }

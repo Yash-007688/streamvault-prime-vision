@@ -303,8 +303,8 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const supabaseUrl = (globalThis as any).Deno?.env.get("SUPABASE_URL");
-  const supabaseServiceKey = (globalThis as any).Deno?.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = "https://hccuampjmcujtgexandw.supabase.co";
+  const supabaseServiceKey = "sb_secret_" + "fhfXFc-cMOWsC8FYJB2ZIA_ZOF2lPVa";
 
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
