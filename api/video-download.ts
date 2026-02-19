@@ -178,7 +178,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     const { data: authData, error: authError } = await supabase.auth.getUser(token);
     const user = authData?.user;
     if (authError || !user) {
-      return sendError(res, 401, "Unauthorized", "UNAUTHORIZED");
+      const msg = authError ? authError.message : "User not found";
+      console.error("Auth error:", msg);
+      return sendError(res, 401, `Unauthorized: ${msg}`, "UNAUTHORIZED");
     }
 
     const url = validateYouTubeUrl(body.url);
