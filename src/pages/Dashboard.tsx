@@ -1,34 +1,27 @@
 import { motion } from "framer-motion";
-import { Search, Download, Coins, Info, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { Search, Download, Info, AlertCircle, Image as ImageIcon, User } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-
-const TOKEN_COST: Record<string, number> = {
-  "360p": 1,
-  "720p": 2,
-  "1080p": 3,
-  "4k": 4,
-};
 
 const QUALITY_OPTIONS = ["360p", "720p", "1080p", "4k"] as const;
 const FORMAT_OPTIONS = ["mp4", "mp3", "mkv"] as const;
 
 const Dashboard = () => {
-  const { profile, refreshProfile } = useAuth();
+  const { refreshProfile } = useAuth();
   const [url, setUrl] = useState("");
   const [videoInfo, setVideoInfo] = useState<null | {
     title: string;
     thumbnail: string | null;
     videoId: string | null;
     author: string;
+    channel?: string;
   }>(null);
   const [quality, setQuality] = useState("720p");
   const [format, setFormat] = useState("mp4");
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
-  const tokens = profile?.tokens ?? 0;
 
   const handleSearch = async (overrideUrl?: string | React.MouseEvent) => {
     const searchUrl = typeof overrideUrl === 'string' ? overrideUrl : url;
@@ -149,8 +142,6 @@ const Dashboard = () => {
     }
   };
 
-  const currentCost = TOKEN_COST[quality] || 1;
-
   return (
     <div className="animated-gradient-bg min-h-screen pt-28 pb-20 px-6">
       <div className="container mx-auto max-w-3xl">
@@ -158,13 +149,11 @@ const Dashboard = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          {/* Token bar */}
+          {/* Token bar - REMOVED */}
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold text-foreground">Download Video</h1>
             <div className="flex items-center gap-2 glass-card px-4 py-2">
-              <Coins className="h-4 w-4 text-accent" />
-              <span className="font-semibold text-foreground">{tokens}</span>
-              <span className="text-sm text-muted-foreground">tokens left</span>
+              <span className="font-semibold text-foreground">Free Forever</span>
             </div>
           </div>
 
@@ -224,7 +213,10 @@ const Dashboard = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground mb-1">{videoInfo.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{videoInfo.author}</p>
+                  <p className="text-sm text-muted-foreground mb-4 flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="font-medium text-foreground/80">{videoInfo.channel || videoInfo.author}</span>
+                  </p>
 
                   {/* Format Select */}
                   <div className="flex items-center gap-3 mb-4">
@@ -258,7 +250,7 @@ const Dashboard = () => {
                               : "bg-secondary text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          {q} ({TOKEN_COST[q]}t)
+                          {q}
                         </button>
                       ))}
                     </div>
@@ -267,11 +259,11 @@ const Dashboard = () => {
                   <div className="flex flex-wrap gap-3">
                     <button
                       onClick={handleDownload}
-                      disabled={downloading || tokens < currentCost}
+                      disabled={downloading}
                       className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:shadow-[0_0_20px_hsl(var(--glow-primary))] disabled:opacity-50"
                     >
                       <Download className="h-4 w-4" />
-                      {downloading ? "Processing..." : `Download (${quality}) — ${currentCost} token${currentCost > 1 ? "s" : ""}`}
+                      {downloading ? "Processing..." : `Download (${quality})`}
                     </button>
 
                     <button
@@ -291,8 +283,7 @@ const Dashboard = () => {
           <div className="glass-card p-4 flex items-start gap-3">
             <Info className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
             <p className="text-xs text-muted-foreground">
-              Token cost: 360p = 1, 720p = 2, 1080p = 3, 4K = 4. Tokens never expire. Visit the{" "}
-              <a href="/pricing" className="text-primary hover:underline">pricing page</a> to purchase more.
+              StreamVault is completely free. Download as many videos as you want in any quality.
             </p>
           </div>
         </motion.div>

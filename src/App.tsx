@@ -9,7 +9,6 @@ import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Index from "./pages/Index";
-import Pricing from "./pages/Pricing";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
@@ -28,9 +27,12 @@ const App = () => (
           <Navbar />
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/pricing" element={<Pricing />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin" element={
+              <AdminRoute>
+                <Admin />
+              </AdminRoute>
+            } />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="*" element={<NotFound />} />

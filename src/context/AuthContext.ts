@@ -9,7 +9,6 @@ export interface User {
 
 export interface Profile {
   name: string;
-  tokens: number;
 }
 
 export interface AuthContextType {

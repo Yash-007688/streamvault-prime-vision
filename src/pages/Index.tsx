@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Play, Shield, Zap, Download, Star, Coins } from "lucide-react";
+import { ArrowRight, Play, Shield, Zap, Download, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const features = [
@@ -20,13 +20,13 @@ const features = [
     description: "Choose from 260p, 720p, 1080p or crystal clear 4K downloads.",
   },
   {
-    icon: Coins,
-    title: "Token System",
-    description: "Pay only for what you use. No recurring subscriptions required.",
+    icon: Star,
+    title: "Completely Free",
+    description: "No tokens, no subscriptions, no hidden fees. Just unlimited downloads.",
   },
 ];
 
-const TYPING_PHRASES = ["Fast. Secure. Premium.", "No Ads. No Limits.", "Download in 4K.", "Powered by Tokens."];
+const TYPING_PHRASES = ["Fast. Secure. Premium.", "No Ads. No Limits.", "Download in 4K.", "Always Free."];
 
 const useTypingEffect = (phrases: string[], typingSpeed = 60, deletingSpeed = 35, pauseMs = 1800) => {
   const [displayed, setDisplayed] = useState("");
@@ -93,8 +93,8 @@ const Index = () => {
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-              Use tokens to download videos in high quality with zero ads.
-              No subscriptions — just pure, premium downloading.
+              Download videos in high quality with zero ads.
+              No subscriptions, no fees — just pure, premium downloading.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -102,15 +102,8 @@ const Index = () => {
                 to="/register"
                 className="group flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-3.5 rounded-xl transition-all hover:shadow-[0_0_30px_hsl(var(--glow-primary))] text-base"
               >
-                Get Started
+                Get Started Free
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-              <Link
-                to="/pricing"
-                className="flex items-center gap-2 glass-card-hover px-8 py-3.5 font-semibold text-foreground text-base"
-              >
-                <Play className="h-4 w-4" />
-                View Pricing
               </Link>
             </div>
           </motion.div>
@@ -197,19 +190,20 @@ const Index = () => {
             className="glass-card p-12 md:p-16 text-center relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5" />
-            <div className="relative z-10">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Ready to start downloading?
+            <div className="relative z-10 text-center">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-foreground tracking-tight">
+                Ready to Start?
               </h2>
-              <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-                Create your free account and get 5 bonus tokens to try it out.
+              <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
+                Join thousands of users downloading videos for free.
+                No credit card required.
               </p>
               <Link
-                to="/register"
-                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-3.5 rounded-xl transition-all hover:shadow-[0_0_30px_hsl(var(--glow-primary))]"
+                to="/dashboard"
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-4 rounded-xl text-lg transition-all hover:shadow-[0_0_40px_hsl(var(--glow-primary))]"
               >
-                Create Free Account
-                <ArrowRight className="h-4 w-4" />
+                Start Downloading Now
+                <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
           </motion.div>

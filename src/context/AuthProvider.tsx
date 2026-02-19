@@ -3,7 +3,6 @@ import { AuthContext, User, Profile } from "./AuthContext";
 
 interface StoredUser extends User {
   password?: string;
-  tokens?: number;
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -31,7 +30,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             });
             setProfile({
               name: foundUser.name || "User",
-              tokens: foundUser.tokens || 5 // Default tokens
             });
           } else {
             // Invalid session
@@ -67,7 +65,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password, // In a real app, NEVER store plain text passwords!
         name: name || "User",
         role: "user",
-        tokens: 5, // Free tokens on signup
       };
 
       storedUsers.push(newUser);
@@ -85,7 +82,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       setProfile({
         name: newUser.name || "User",
-        tokens: newUser.tokens || 0
       });
 
     } finally {
@@ -117,7 +113,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       setProfile({
         name: foundUser.name || "User",
-        tokens: foundUser.tokens || 0
       });
     } finally {
       setLoading(false);
@@ -142,7 +137,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (foundUser) {
       setProfile({
         name: foundUser.name || "User",
-        tokens: foundUser.tokens || 0
       });
     }
   };

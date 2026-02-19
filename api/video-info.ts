@@ -110,6 +110,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
           videoId,
           author: oembed.author_name || "Unknown",
+          channel: oembed.author_name || "Unknown",
           availableFormats, // likely empty, but UI handles it
         });
       } catch (oembedError) {
@@ -123,6 +124,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       thumbnail: metadata?.thumbnail || null,
       videoId: metadata?.id || null,
       author: metadata?.uploader || metadata?.channel || "Unknown",
+      channel: metadata?.channel || metadata?.uploader || "Unknown",
       availableFormats,
     });
   } catch (error) {

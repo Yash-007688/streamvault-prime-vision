@@ -14,7 +14,7 @@ const Footer = () => (
             <span className="text-xl font-bold gradient-text">StreamVault</span>
           </Link>
           <p className="text-sm text-muted-foreground max-w-sm">
-            Premium YouTube video downloader with token-based access. Fast, secure, and ad-free experience.
+            Premium YouTube video downloader. Fast, secure, and completely free experience.
           </p>
         </div>
 
@@ -22,8 +22,7 @@ const Footer = () => (
         <div>
           <h4 className="font-semibold text-foreground mb-3 text-sm">Product</h4>
           <div className="space-y-2">
-            <FooterLink to="/pricing">Pricing</FooterLink>
-            <FooterLink to="/dashboard">Dashboard</FooterLink>
+            <FooterLink to="/dashboard">Download</FooterLink>
             <FooterLink to="/login">Sign In</FooterLink>
           </div>
         </div>

@@ -7,7 +7,6 @@ import { toast } from "sonner";
 interface UserRow {
   id: string;
   name: string;
-  tokens: number;
   role: string;
   joined: string;
   user_id: string;
@@ -23,13 +22,6 @@ interface DownloadRow {
   created_at: string;
 }
 
-const TOKEN_COST: Record<string, number> = {
-  "360p": 1,
-  "720p": 2,
-  "1080p": 3,
-  "4k": 4,
-};
-
 interface DownloadData {
   id: string;
   user_id: string;
@@ -37,11 +29,6 @@ interface DownloadData {
   video_title: string;
   quality: string;
   created_at: string;
-}
-
-interface PaymentData {
-  amount: number;
-  tokens_purchased: number;
 }
 
 const Admin = () => {
@@ -54,11 +41,8 @@ const Admin = () => {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalDownloads: 0,
-    totalRevenue: 0,
-    totalTokensSold: 0,
   });
   const [downloadChartData, setDownloadChartData] = useState<{ name: string; downloads: number }[]>([]);
-  const [revenueChartData, setRevenueChartData] = useState<{ name: string; revenue: number }[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -68,10 +52,9 @@ const Admin = () => {
     setLoading(true);
     try {
       // Mock data for no-backend mode
-      const profiles = [{ id: "1", user_id: "guest", name: "Guest User", tokens: 9999, created_at: new Date().toISOString() }];
+      const profiles = [{ id: "1", user_id: "guest", name: "Guest User", created_at: new Date().toISOString() }];
       const roles = [{ user_id: "guest", role: "admin" }];
       const downloads: DownloadData[] = [];
-      const payments: PaymentData[] = [];
 
       // Build user list
       const roleMap = new Map(roles.map((r) => [r.user_id, r.role]));
@@ -81,7 +64,6 @@ const Admin = () => {
         id: p.id,
         user_id: p.user_id,
         name: p.name || "Unnamed",
-        tokens: p.tokens,
         role: roleMap.get(p.user_id) || "user",
         joined: new Date(p.created_at).toLocaleDateString(),
       }));
@@ -100,35 +82,19 @@ const Admin = () => {
       setDownloadRows(dlRows);
 
       // Stats
-      const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-      const totalTokensSold = payments.reduce((sum, p) => sum + (p.tokens_purchased || 0), 0);
       setStats({
         totalUsers: profiles.length,
         totalDownloads: downloads.length,
-        totalRevenue,
-        totalTokensSold,
       });
 
       // Charts
       setDownloadChartData([]);
-      setRevenueChartData([]);
 
     } catch (error) {
       toast.error("Failed to fetch admin data");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAddTokens = async (userId: string, currentTokens: number) => {
-    // Mock action
-    toast.success("Added 10 tokens (Mock)");
-    // In a real app, you'd call an API endpoint here
-  };
-
-  const handleRemoveTokens = async (userId: string, currentTokens: number) => {
-    // Mock action
-    toast.success("Removed 10 tokens (Mock)");
   };
 
   const filteredUsers = users.filter((u) => u.name.toLowerCase().includes(search.toLowerCase()));
@@ -142,8 +108,6 @@ const Admin = () => {
   const statCards = [
     { label: "Total Users", value: stats.totalUsers.toLocaleString(), icon: Users },
     { label: "Total Downloads", value: stats.totalDownloads.toLocaleString(), icon: Download },
-    { label: "Revenue", value: `₹${stats.totalRevenue.toLocaleString()}`, icon: IndianRupee },
-    { label: "Tokens Sold", value: stats.totalTokensSold.toLocaleString(), icon: TrendingUp },
   ];
 
   if (loading) {
@@ -189,18 +153,6 @@ const Admin = () => {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="glass-card p-6">
-              <h3 className="text-sm font-semibold text-foreground mb-4">Revenue Trend</h3>
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={revenueChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 15% 20%)" />
-                  <XAxis dataKey="name" stroke="hsl(240 10% 60%)" fontSize={12} />
-                  <YAxis stroke="hsl(240 10% 60%)" fontSize={12} />
-                  <Tooltip contentStyle={{ backgroundColor: "hsl(240 20% 12%)", border: "1px solid hsl(240 15% 20%)", borderRadius: "12px", color: "hsl(0 0% 96%)" }} />
-                  <Line type="monotone" dataKey="revenue" stroke="hsl(247 100% 74%)" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
           </div>
 
           {/* Tab Toggle */}
@@ -235,14 +187,12 @@ const Admin = () => {
                     <tr className="border-b border-border">
                       <th className="text-left py-3 px-4 text-muted-foreground font-medium">Name</th>
                       <th className="text-left py-3 px-4 text-muted-foreground font-medium">Role</th>
-                      <th className="text-left py-3 px-4 text-muted-foreground font-medium">Tokens</th>
                       <th className="text-left py-3 px-4 text-muted-foreground font-medium">Joined</th>
-                      <th className="text-right py-3 px-4 text-muted-foreground font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredUsers.length === 0 ? (
-                      <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">No users found</td></tr>
+                      <tr><td colSpan={3} className="py-8 text-center text-muted-foreground">No users found</td></tr>
                     ) : (
                       filteredUsers.map((user) => (
                         <tr key={user.id} className="border-b border-border/50 hover:bg-secondary/20 transition-colors">
@@ -250,14 +200,7 @@ const Admin = () => {
                           <td className="py-3 px-4">
                             <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${user.role === "admin" ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"}`}>{user.role}</span>
                           </td>
-                          <td className="py-3 px-4 text-foreground">{user.tokens}</td>
                           <td className="py-3 px-4 text-muted-foreground">{user.joined}</td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center justify-end gap-1">
-                              <button onClick={() => handleAddTokens(user.user_id, user.tokens)} className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors" title="Add 10 tokens"><Plus className="h-4 w-4" /></button>
-                              <button onClick={() => handleRemoveTokens(user.user_id, user.tokens)} className="p-1.5 rounded-lg hover:bg-accent/10 text-accent transition-colors" title="Remove 10 tokens"><Minus className="h-4 w-4" /></button>
-                            </div>
-                          </td>
                         </tr>
                       ))
                     )}
@@ -285,14 +228,13 @@ const Admin = () => {
                       <th className="text-left py-3 px-4 text-muted-foreground font-medium">Video</th>
                       <th className="text-left py-3 px-4 text-muted-foreground font-medium">Link</th>
                       <th className="text-left py-3 px-4 text-muted-foreground font-medium">Quality</th>
-                      <th className="text-left py-3 px-4 text-muted-foreground font-medium">Tokens Used</th>
                       <th className="text-left py-3 px-4 text-muted-foreground font-medium">Status</th>
                       <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDownloads.length === 0 ? (
-                      <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">No downloads found</td></tr>
+                      <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No downloads found</td></tr>
                     ) : (
                       filteredDownloads.map((dl) => (
                         <tr key={dl.id} className="border-b border-border/50 hover:bg-secondary/20 transition-colors">
@@ -304,7 +246,6 @@ const Admin = () => {
                             </a>
                           </td>
                           <td className="py-3 px-4 text-foreground">{dl.quality}</td>
-                          <td className="py-3 px-4 text-foreground">{TOKEN_COST[dl.quality] || 1}</td>
                           <td className="py-3 px-4">
                             <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-green-500/20 text-green-400">Success</span>
                           </td>

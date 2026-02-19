@@ -286,9 +286,7 @@ class handler(BaseHTTPRequestHandler):
                 "qualityResolved": f"{target_height}p", 
                 "formatId": "python-processed",
                 "downloadUrl": download_url,
-                "expiresNote": "Download URL may expire quickly.",
-                "tokenCost": 0,
-                "tokensRemaining": 9999
+                "expiresNote": "Download URL may expire quickly."
             }
             
             send_success(self, response_data)

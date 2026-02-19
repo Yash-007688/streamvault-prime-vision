@@ -1,12 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Coins, Menu, X, LogOut, LayoutDashboard, Bell } from "lucide-react";
+import { Download, Menu, X, LogOut, LayoutDashboard, Bell } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
 const notifications = [
-  { id: 1, title: "Welcome to StreamVault! 🎉", desc: "You have 5 free tokens to get started.", time: "Just now" },
-  { id: 2, title: "Token System Active", desc: "260p=1, 720p=2, 1080p=3, 4K=4 tokens.", time: "1 min ago" },
+  { id: 1, title: "Welcome to StreamVault! 🎉", desc: "Start downloading videos for free.", time: "Just now" },
+  { id: 2, title: "Service Update", desc: "We are now completely free for everyone!", time: "1 min ago" },
   { id: 3, title: "Download Complete ✅", desc: "Your last video was downloaded successfully.", time: "5 min ago" },
 ];
 
@@ -15,10 +15,9 @@ const Navbar = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
 
   const isLoggedIn = !!user;
-  const tokens = profile?.tokens ?? 0;
 
   const isAuthPage = ["/login", "/register"].includes(location.pathname);
 
@@ -39,13 +38,12 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-1">
           <NavItem to="/" active={isActive("/")}>Home</NavItem>
-          <NavItem to="/pricing" active={isActive("/pricing")}>Pricing</NavItem>
+          <NavItem to="/dashboard" active={isActive("/dashboard")}>
+            <LayoutDashboard className="h-4 w-4" />
+            Download
+          </NavItem>
           {isLoggedIn && (
             <>
-              <NavItem to="/dashboard" active={isActive("/dashboard")}>
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </NavItem>
               {isAdmin && (
                 <NavItem to="/admin" active={isActive("/admin")}>Admin</NavItem>
               )}
@@ -97,11 +95,6 @@ const Navbar = () => {
                   </AnimatePresence>
                 </div>
               )}
-              <div className="flex items-center gap-2 glass-card px-3 py-1.5 text-sm">
-                <Coins className="h-4 w-4 text-accent" />
-                <span className="font-semibold text-foreground">{tokens}</span>
-                <span className="text-muted-foreground">tokens</span>
-              </div>
               <button
                 onClick={signOut}
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -143,10 +136,9 @@ const Navbar = () => {
           className="md:hidden border-t border-border/50 px-6 py-4 space-y-2"
         >
           <MobileNavItem to="/" onClick={() => setMobileOpen(false)}>Home</MobileNavItem>
-          <MobileNavItem to="/pricing" onClick={() => setMobileOpen(false)}>Pricing</MobileNavItem>
+          <MobileNavItem to="/dashboard" onClick={() => setMobileOpen(false)}>Download</MobileNavItem>
           {isLoggedIn ? (
             <>
-              <MobileNavItem to="/dashboard" onClick={() => setMobileOpen(false)}>Dashboard</MobileNavItem>
               {isAdmin && (
                 <MobileNavItem to="/admin" onClick={() => setMobileOpen(false)}>Admin</MobileNavItem>
               )}
@@ -156,10 +148,6 @@ const Navbar = () => {
                   <span className="text-muted-foreground">Notifications ({notifications.length})</span>
                 </div>
               )}
-              <div className="flex items-center gap-2 py-2 text-sm">
-                <Coins className="h-4 w-4 text-accent" />
-                <span className="font-semibold">{tokens} tokens</span>
-              </div>
               <button
                 onClick={() => { signOut(); setMobileOpen(false); }}
                 className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -170,7 +158,7 @@ const Navbar = () => {
           ) : (
             <>
               <MobileNavItem to="/login" onClick={() => setMobileOpen(false)}>Sign In</MobileNavItem>
-              <MobileNavItem to="/register" onClick={() => setMobileOpen(false)}>Get Started</MobileNavItem>
+              <MobileNavItem to="/dashboard" onClick={() => setMobileOpen(false)}>Start Downloading</MobileNavItem>
             </>
           )}
         </motion.div>

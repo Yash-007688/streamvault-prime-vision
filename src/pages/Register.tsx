@@ -45,7 +45,7 @@ const Register = () => {
         <div className="glass-card p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-2">Create your account</h1>
-            <p className="text-sm text-muted-foreground">Get 5 free tokens when you sign up</p>
+            <p className="text-sm text-muted-foreground">Start downloading videos for free</p>
           </div>
 
           {error && (
