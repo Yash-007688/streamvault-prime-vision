@@ -28,8 +28,9 @@ const Dashboard = () => {
   const [error, setError] = useState("");
   const tokens = profile?.tokens ?? 0;
 
-  const handleSearch = async () => {
-    if (!url.trim()) return;
+  const handleSearch = async (overrideUrl?: string | React.MouseEvent) => {
+    const searchUrl = typeof overrideUrl === 'string' ? overrideUrl : url;
+    if (!searchUrl.trim()) return;
     setLoading(true);
     setError("");
     setVideoInfo(null);
@@ -41,7 +42,7 @@ const Dashboard = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: searchUrl }),
       });
 
       const data = await response.json();
@@ -55,6 +56,14 @@ const Dashboard = () => {
       toast.error(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedUrl = e.clipboardData.getData("text");
+    if (pastedUrl && pastedUrl.trim()) {
+      // Small delay to ensure state update doesn't conflict, though we pass it directly
+      setTimeout(() => handleSearch(pastedUrl), 0);
     }
   };
 
@@ -146,6 +155,7 @@ const Dashboard = () => {
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                onPaste={handlePaste}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="https://youtube.com/watch?v=..."
                 className="flex-1 bg-secondary/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all text-sm"
