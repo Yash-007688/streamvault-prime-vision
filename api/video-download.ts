@@ -7,6 +7,7 @@ import {
   type YtDlpInfo,
   type YtDlpFormat,
 } from "./_lib/ytdlp.js";
+import ytdl from "@distube/ytdl-core";
 
 type ApiRequest = {
   method?: string;
@@ -157,6 +158,34 @@ async function tryCobaltDownload(videoId: string, quality: SupportedQuality): Pr
   return null;
 }
 
+async function tryYtdlCoreDownload(url: string, quality: SupportedQuality): Promise<string | null> {
+  try {
+    const info = await ytdl.getInfo(url);
+    const targetHeight = quality === "4k" || quality === "2160p" ? 2160 : parseInt(quality.replace("p", ""));
+    
+    const format = ytdl.chooseFormat(info.formats, {
+      quality: "highestvideo",
+      filter: (format) => {
+        return (
+          format.container === "mp4" &&
+          format.hasVideo &&
+          format.hasAudio &&
+          (format.height || 0) <= targetHeight
+        );
+      },
+    });
+
+    if (format && format.url) return format.url;
+
+    // Fallback: Try to find video-only if combined is not available (browser might handle it differently, but usually we need combined)
+    // Actually, ytdl-core is good at finding combined formats if available.
+    return null;
+  } catch (err) {
+    console.error("ytdl-core (pytube equivalent) failed:", err);
+    return null;
+  }
+}
+
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   setCors(res);
 
@@ -205,11 +234,16 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       }
     }
 
+    // Third Fallback: Pytube-style (Node.js native ytdl-core)
+    if (!downloadUrl) {
+      downloadUrl = await tryYtdlCoreDownload(url, requestedQuality);
+    }
+
     if (!downloadUrl) {
       return sendError(
         res,
         422,
-        `Could not process video: All download methods failed. Try a different quality or video.`,
+        `Could not process video: All download methods (yt-dlp, Cobalt, ytdl-core) failed. Try a different quality or video.`,
         "DOWNLOAD_PROCESSING_FAILED"
       );
     }
