@@ -83,33 +83,39 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       availableFormats = formats.filter((f): f is typeof availableFormats[number] => f !== null);
     } catch (ytdlpError) {
       const message = getMessage(ytdlpError);
-      if (!/enoent|not found|timed out/i.test(message)) {
-        throw ytdlpError;
-      }
+      console.error(`yt-dlp failed for ${url}:`, message);
 
+      // Fallback to oembed for ANY error from yt-dlp
+      // This ensures we at least show the video title/thumbnail even if we can't get formats
       const videoId = extractVideoId(url);
       if (!videoId) {
         return sendError(res, 400, "Invalid YouTube URL", "INVALID_URL");
       }
 
-      const oembedRes = await fetch(
-        `https://www.youtube.com/oembed?url=${encodeURIComponent(
-          `https://www.youtube.com/watch?v=${videoId}`
-        )}&format=json`
-      );
+      try {
+        const oembedRes = await fetch(
+          `https://www.youtube.com/oembed?url=${encodeURIComponent(
+            `https://www.youtube.com/watch?v=${videoId}`
+          )}&format=json`
+        );
 
-      if (!oembedRes.ok) {
-        return sendError(res, 404, "Video not found", "VIDEO_NOT_FOUND");
+        if (!oembedRes.ok) {
+          // If both yt-dlp and oembed fail, we really can't do anything
+          throw new Error(`Both yt-dlp and oembed failed. yt-dlp error: ${message}`);
+        }
+
+        const oembed = (await oembedRes.json()) as { title?: string; author_name?: string };
+        return res.status(200).json({
+          title: oembed.title || "Untitled",
+          thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          videoId,
+          author: oembed.author_name || "Unknown",
+          availableFormats, // likely empty, but UI handles it
+        });
+      } catch (oembedError) {
+        // If oembed also fails, throw the original yt-dlp error or a combined one
+        throw new Error(`Video info fetch failed: ${message}`);
       }
-
-      const oembed = (await oembedRes.json()) as { title?: string; author_name?: string };
-      return res.status(200).json({
-        title: oembed.title || "Untitled",
-        thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-        videoId,
-        author: oembed.author_name || "Unknown",
-        availableFormats,
-      });
     }
 
     return res.status(200).json({
@@ -139,6 +145,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendError(res, 400, "Unsupported YouTube URL", "UNSUPPORTED_URL");
     }
 
-    return sendError(res, 422, "Could not fetch video info", "VIDEO_INFO_FAILED");
+    return sendError(res, 422, `Could not fetch video info: ${message}`, "VIDEO_INFO_FAILED");
   }
 }

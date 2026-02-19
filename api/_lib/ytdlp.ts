@@ -129,6 +129,7 @@ export async function runYtDlpMetadata(url: string): Promise<YtDlpInfo> {
 
     proc.on("error", (error) => {
       clearTimeout(timer);
+      error.message = `Spawn error for ${binaryPath}: ${error.message}`;
       reject(error);
     });
 
@@ -136,7 +137,7 @@ export async function runYtDlpMetadata(url: string): Promise<YtDlpInfo> {
       clearTimeout(timer);
 
       if (code !== 0) {
-        reject(new Error((stderr || stdout || "yt-dlp failed").trim()));
+        reject(new Error(`yt-dlp failed at ${binaryPath}: ${(stderr || stdout || "unknown error").trim()}`));
         return;
       }
 
