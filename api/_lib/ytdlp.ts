@@ -76,7 +76,8 @@ export function extractVideoId(rawUrl: string): string | null {
 }
 
 export async function runYtDlpMetadata(url: string): Promise<YtDlpInfo> {
-  const { spawn } = await import("node:child_process");
+  // Ensure we import spawn from child_process
+  // (already imported at top)
 
   const args = [
     "--dump-single-json",
