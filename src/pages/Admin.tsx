@@ -30,6 +30,20 @@ const TOKEN_COST: Record<string, number> = {
   "4k": 4,
 };
 
+interface DownloadData {
+  id: string;
+  user_id: string;
+  video_url: string;
+  video_title: string;
+  quality: string;
+  created_at: string;
+}
+
+interface PaymentData {
+  amount: number;
+  tokens_purchased: number;
+}
+
 const Admin = () => {
   const [search, setSearch] = useState("");
   const [dlSearch, setDlSearch] = useState("");
@@ -56,8 +70,8 @@ const Admin = () => {
       // Mock data for no-backend mode
       const profiles = [{ id: "1", user_id: "guest", name: "Guest User", tokens: 9999, created_at: new Date().toISOString() }];
       const roles = [{ user_id: "guest", role: "admin" }];
-      const downloads: any[] = [];
-      const payments: any[] = [];
+      const downloads: DownloadData[] = [];
+      const payments: PaymentData[] = [];
 
       // Build user list
       const roleMap = new Map(roles.map((r) => [r.user_id, r.role]));

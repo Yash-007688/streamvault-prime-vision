@@ -2,8 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import { platform } from 'os';
 import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
-const BIN_DIR = path.join(process.cwd(), 'bin');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const BIN_DIR = path.join(__dirname, '../bin');
 const PLATFORM = platform();
 
 let binaryName = 'yt-dlp';
