@@ -6,13 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const TOKEN_COST: Record<string, number> = {
-  "260p": 1,
+  "360p": 1,
   "720p": 2,
   "1080p": 3,
   "4k": 4,
 };
 
-const QUALITY_OPTIONS = ["260p", "720p", "1080p", "4k"] as const;
+const QUALITY_OPTIONS = ["360p", "720p", "1080p", "4k"] as const;
 
 const Dashboard = () => {
   const { profile, session, refreshProfile } = useAuth();
@@ -43,9 +43,10 @@ const Dashboard = () => {
       if (fnError) throw new Error(fnError.message);
       if (data?.error) throw new Error(data.error);
       setVideoInfo(data);
-    } catch (e: any) {
-      setError(e.message || "Failed to fetch video info");
-      toast.error(e.message || "Failed to fetch video info");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to fetch video info";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -97,9 +98,10 @@ const Dashboard = () => {
         toast.success(`Download started! ${data.tokenCost} token(s) used. ${data.tokensRemaining} remaining.`);
         refreshProfile();
       }
-    } catch (e: any) {
-      setError(e.message || "Download failed");
-      toast.error(e.message || "Download failed");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Download failed";
+      setError(message);
+      toast.error(message);
     } finally {
       setDownloading(false);
     }
@@ -216,7 +218,7 @@ const Dashboard = () => {
           <div className="glass-card p-4 flex items-start gap-3">
             <Info className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
             <p className="text-xs text-muted-foreground">
-              Token cost: 260p = 1, 720p = 2, 1080p = 3, 4K = 4. Tokens never expire. Visit the{" "}
+              Token cost: 360p = 1, 720p = 2, 1080p = 3, 4K = 4. Tokens never expire. Visit the{" "}
               <a href="/pricing" className="text-primary hover:underline">pricing page</a> to purchase more.
             </p>
           </div>

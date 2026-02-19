@@ -28,8 +28,8 @@ const Register = () => {
     setLoading(true);
     try {
       await signUp(email, password, name);
-    } catch (err: any) {
-      setError(err.message || "Failed to create account");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to create account");
     } finally {
       setLoading(false);
     }

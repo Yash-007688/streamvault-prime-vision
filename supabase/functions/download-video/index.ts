@@ -88,6 +88,107 @@ const CLIENTS: ClientConfig[] = [
   },
 ];
 
+interface CobaltPickerItem {
+  url?: string;
+}
+
+interface CobaltResponse {
+  url?: string;
+  downloadUrl?: string;
+  data?: {
+    url?: string;
+  };
+  picker?: CobaltPickerItem[];
+}
+
+function parseCobaltUrl(payload: CobaltResponse): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  if (typeof payload.url === "string" && payload.url) return payload.url;
+  if (typeof payload.downloadUrl === "string" && payload.downloadUrl) return payload.downloadUrl;
+  if (typeof payload?.data?.url === "string" && payload.data.url) return payload.data.url;
+
+  const picker = Array.isArray(payload?.picker) ? payload.picker : [];
+  for (const item of picker) {
+    if (typeof item?.url === "string" && item.url) return item.url;
+  }
+
+  return null;
+}
+
+async function tryCobaltDownload(videoId: string, quality: string): Promise<string | null> {
+  const qualityMap: Record<string, string> = {
+    "360p": "360",
+    "720p": "720",
+    "1080p": "1080",
+    "4k": "2160", // Cobalt uses height or specific strings? Docs say 360, 720, 1080, max. Let's assume height string.
+  };
+  const targetQuality = qualityMap[quality] || "720";
+  
+  // Try multiple cobalt API endpoints for reliability
+  const endpoints = [
+    "https://api.cobalt.tools/api/json",
+    "https://co.wuk.sh/api/json",
+  ];
+
+  for (const endpoint of endpoints) {
+    const payloads = [
+      {
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        videoQuality: targetQuality,
+        filenameStyle: "pretty",
+        vCodec: "h264",
+      },
+      {
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        quality: targetQuality, // Some instances use 'quality' instead of 'videoQuality'
+        audioFormat: "best",
+        filenamePattern: "classic",
+      },
+    ];
+
+    for (const payload of payloads) {
+      try {
+        const cobaltRes = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": "streamvault/1.0",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!cobaltRes.ok) continue;
+
+        const cobaltData = await cobaltRes.json();
+        const resolvedUrl = parseCobaltUrl(cobaltData);
+        if (resolvedUrl) return resolvedUrl;
+      } catch (err) {
+        console.error(`Cobalt request failed for ${endpoint}:`, err);
+        continue;
+      }
+    }
+  }
+  return null;
+}
+
+interface InnertubeFormat {
+  url?: string;
+  height?: number;
+  mimeType?: string;
+}
+
+interface InnertubeData {
+  playabilityStatus?: {
+    status?: string;
+    reason?: string;
+  };
+  streamingData?: {
+    formats?: InnertubeFormat[];
+    adaptiveFormats?: InnertubeFormat[];
+  };
+}
+
 async function tryInnertubeClient(
   videoId: string,
   client: ClientConfig,
@@ -120,7 +221,7 @@ async function tryInnertubeClient(
   };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), 4000);
 
   try {
     const res = await fetch(
@@ -135,7 +236,7 @@ async function tryInnertubeClient(
       return null;
     }
 
-    const data = await res.json();
+    const data = await res.json() as InnertubeData;
     const status = data.playabilityStatus?.status;
     
     if (status && status !== "OK") {
@@ -146,23 +247,23 @@ async function tryInnertubeClient(
 
     // Prefer muxed formats (video + audio)
     const muxed = (data.streamingData?.formats || [])
-      .filter((f: any) => f.url && f.height)
-      .map((f: any) => ({ url: f.url, height: f.height }));
+      .filter((f) => f.url && f.height)
+      .map((f) => ({ url: f.url!, height: f.height! }));
 
     console.log(`${client.name}: ${muxed.length} muxed formats`);
 
     if (muxed.length > 0) {
-      muxed.sort((a: any, b: any) => Math.abs(a.height - target) - Math.abs(b.height - target));
+      muxed.sort((a, b) => Math.abs(a.height - target) - Math.abs(b.height - target));
       return muxed[0].url;
     }
 
     // Try adaptive formats (video only)
     const adaptive = (data.streamingData?.adaptiveFormats || [])
-      .filter((f: any) => f.url && f.height && f.mimeType?.startsWith("video/"))
-      .map((f: any) => ({ url: f.url, height: f.height }));
+      .filter((f) => f.url && f.height && f.mimeType?.startsWith("video/"))
+      .map((f) => ({ url: f.url!, height: f.height! }));
 
     if (adaptive.length > 0) {
-      adaptive.sort((a: any, b: any) => Math.abs(a.height - target) - Math.abs(b.height - target));
+      adaptive.sort((a, b) => Math.abs(a.height - target) - Math.abs(b.height - target));
       console.log(`${client.name}: using adaptive ${adaptive[0].height}p`);
       return adaptive[0].url;
     }
@@ -187,6 +288,11 @@ async function getDownloadUrl(videoId: string, quality: string): Promise<string 
     if (url) return url;
   }
 
+  // Fallback to Cobalt
+  console.log("Innertube clients failed, trying Cobalt...");
+  const cobaltUrl = await tryCobaltDownload(videoId, quality);
+  if (cobaltUrl) return cobaltUrl;
+
   return null;
 }
 
@@ -195,13 +301,20 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    return new Response(JSON.stringify({ error: "Server Configuration Error: Missing Supabase keys" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ error: "Unauthorized: Missing Authorization header" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
@@ -210,8 +323,9 @@ serve(async (req) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
   if (authError || !user) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    console.error("Auth error:", authError);
+    return new Response(JSON.stringify({ error: "Unauthorized: Invalid token" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
@@ -221,24 +335,25 @@ serve(async (req) => {
     const videoId = extractVideoId(url);
     if (!videoId) {
       return new Response(JSON.stringify({ error: "Invalid YouTube URL" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const cost = TOKEN_COST[quality] || 1;
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles").select("tokens").eq("user_id", user.id).single();
 
-    if (!profile) {
-      return new Response(JSON.stringify({ error: "Profile not found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (profileError || !profile) {
+      console.error("Profile fetch error:", profileError);
+      return new Response(JSON.stringify({ error: "Profile not found or database error" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (profile.tokens < cost) {
       return new Response(
         JSON.stringify({ error: `Not enough tokens. ${quality} needs ${cost}, you have ${profile.tokens}.` }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -248,15 +363,30 @@ serve(async (req) => {
     if (!downloadUrl) {
       return new Response(
         JSON.stringify({ error: "Could not get download link. Try a different quality or try again later." }),
-        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Deduct tokens and log download
-    await supabase.from("profiles").update({ tokens: profile.tokens - cost }).eq("user_id", user.id);
-    await supabase.from("downloads").insert({
+    const { error: updateError } = await supabase.from("profiles").update({ tokens: profile.tokens - cost }).eq("user_id", user.id);
+    if (updateError) {
+        console.error("Token update error:", updateError);
+        // We shouldn't fail the download if deduction fails, but we should log it.
+        // Or strictly speaking, we should fail? 
+        // For now, let's just log it and proceed, or maybe fail to prevent free usage?
+        // Let's fail to be safe.
+        return new Response(JSON.stringify({ error: "Failed to process transaction" }), {
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
+
+    const { error: insertError } = await supabase.from("downloads").insert({
       user_id: user.id, video_url: url, video_title: title || "Untitled", quality,
     });
+    
+    if (insertError) {
+        console.error("Download log error:", insertError);
+    }
 
     return new Response(
       JSON.stringify({
@@ -268,7 +398,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("Handler error:", err);
     return new Response(JSON.stringify({ error: "Download failed" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

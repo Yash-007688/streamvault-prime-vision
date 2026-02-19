@@ -3,6 +3,8 @@ import {
   extractAvailableQualities,
   runYtDlpMetadata,
   validateYouTubeUrl,
+  type YtDlpInfo,
+  type SupportedQuality,
 } from "./_lib/ytdlp.js";
 
 type ApiRequest = {
@@ -66,9 +68,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendError(res, 400, "Invalid YouTube URL", "INVALID_URL");
     }
 
-    let metadata;
+    let metadata: YtDlpInfo | undefined;
     let availableFormats: Array<{
-      quality: "360p" | "720p" | "1080p";
+      quality: SupportedQuality;
       formatId: string | null;
       ext: string;
       height: number | null;
@@ -76,7 +78,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
     try {
       metadata = await runYtDlpMetadata(url);
-      availableFormats = extractAvailableQualities(metadata) as typeof availableFormats;
+      const formats = extractAvailableQualities(metadata);
+      // Filter out nulls explicitly to satisfy TypeScript
+      availableFormats = formats.filter((f): f is typeof availableFormats[number] => f !== null);
     } catch (ytdlpError) {
       const message = getMessage(ytdlpError);
       if (!/enoent|not found|timed out/i.test(message)) {
@@ -109,10 +113,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     }
 
     return res.status(200).json({
-      title: metadata.title || "Untitled",
-      thumbnail: metadata.thumbnail || null,
-      videoId: metadata.id || null,
-      author: metadata.uploader || metadata.channel || "Unknown",
+      title: metadata?.title || "Untitled",
+      thumbnail: metadata?.thumbnail || null,
+      videoId: metadata?.id || null,
+      author: metadata?.uploader || metadata?.channel || "Unknown",
       availableFormats,
     });
   } catch (error) {

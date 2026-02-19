@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +36,7 @@ serve(async (req) => {
     const { url } = await req.json();
     if (!url || typeof url !== "string") {
       return new Response(JSON.stringify({ error: "Missing url" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -44,7 +44,7 @@ serve(async (req) => {
     const videoId = extractVideoId(url);
     if (!videoId) {
       return new Response(JSON.stringify({ error: "Invalid YouTube URL" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -56,12 +56,17 @@ serve(async (req) => {
 
     if (!oembedRes.ok) {
       return new Response(JSON.stringify({ error: "Video not found" }), {
-        status: 404,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const oembed = await oembedRes.json();
+    interface OembedResponse {
+      title?: string;
+      author_name?: string;
+    }
+
+    const oembed = await oembedRes.json() as OembedResponse;
 
     return new Response(
       JSON.stringify({
@@ -75,7 +80,7 @@ serve(async (req) => {
   } catch (err) {
     return new Response(
       JSON.stringify({ error: "Failed to fetch video info" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

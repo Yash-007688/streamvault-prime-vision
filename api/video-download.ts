@@ -5,6 +5,8 @@ import {
   runYtDlpMetadata,
   validateYouTubeUrl,
   type SupportedQuality,
+  type YtDlpInfo,
+  type YtDlpFormat,
 } from "./_lib/ytdlp.js";
 
 type ApiRequest = {
@@ -62,7 +64,20 @@ function getBody(req: ApiRequest): Record<string, unknown> {
   return req.body as Record<string, unknown>;
 }
 
-function parseCobaltUrl(payload: any): string | null {
+interface CobaltPickerItem {
+  url?: string;
+}
+
+interface CobaltResponse {
+  url?: string;
+  downloadUrl?: string;
+  data?: {
+    url?: string;
+  };
+  picker?: CobaltPickerItem[];
+}
+
+function parseCobaltUrl(payload: CobaltResponse): string | null {
   if (!payload || typeof payload !== "object") return null;
   if (typeof payload.url === "string" && payload.url) return payload.url;
   if (typeof payload.downloadUrl === "string" && payload.downloadUrl) return payload.downloadUrl;
@@ -120,7 +135,7 @@ async function tryCobaltDownload(videoId: string, quality: SupportedQuality): Pr
 
         if (!cobaltRes.ok) continue;
 
-        const cobaltData = await cobaltRes.json();
+        const cobaltData = await cobaltRes.json() as CobaltResponse;
         const resolvedUrl = parseCobaltUrl(cobaltData);
         if (resolvedUrl) return resolvedUrl;
       } catch (err) {
@@ -191,8 +206,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     }
 
     let downloadUrl: string | null = null;
-    let metadata: any = null;
-    let selectedFormat: any = null;
+    let metadata: YtDlpInfo | null = null;
+    let selectedFormat: YtDlpFormat | null = null;
 
     // Primary method: yt-dlp
     try {
