@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { Users, Download, IndianRupee, TrendingUp, Search, Plus, Minus, Loader2, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface UserRow {
@@ -54,17 +53,11 @@ const Admin = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [profilesRes, rolesRes, downloadsRes, paymentsRes] = await Promise.all([
-        supabase.from("profiles").select("id, user_id, name, tokens, created_at"),
-        supabase.from("user_roles").select("user_id, role"),
-        supabase.from("downloads").select("*").order("created_at", { ascending: false }),
-        supabase.from("payments").select("*"),
-      ]);
-
-      const profiles = profilesRes.data ?? [];
-      const roles = rolesRes.data ?? [];
-      const downloads = downloadsRes.data ?? [];
-      const payments = paymentsRes.data ?? [];
+      // Mock data for no-backend mode
+      const profiles = [{ id: "1", user_id: "guest", name: "Guest User", tokens: 9999, created_at: new Date().toISOString() }];
+      const roles = [{ user_id: "guest", role: "admin" }];
+      const downloads: any[] = [];
+      const payments: any[] = [];
 
       // Build user list
       const roleMap = new Map(roles.map((r) => [r.user_id, r.role]));
@@ -102,44 +95,26 @@ const Admin = () => {
         totalTokensSold,
       });
 
-      // Chart data
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const dlByMonth = new Map<string, number>();
-      const revByMonth = new Map<string, number>();
+      // Charts
+      setDownloadChartData([]);
+      setRevenueChartData([]);
 
-      downloads.forEach((d) => {
-        const month = months[new Date(d.created_at).getMonth()];
-        dlByMonth.set(month, (dlByMonth.get(month) || 0) + 1);
-      });
-
-      payments.forEach((p) => {
-        const month = months[new Date(p.created_at).getMonth()];
-        revByMonth.set(month, (revByMonth.get(month) || 0) + p.amount);
-      });
-
-      const allMonths = months.filter((m) => dlByMonth.has(m) || revByMonth.has(m));
-      if (allMonths.length === 0) allMonths.push(months[new Date().getMonth()]);
-
-      setDownloadChartData(allMonths.map((m) => ({ name: m, downloads: dlByMonth.get(m) || 0 })));
-      setRevenueChartData(allMonths.map((m) => ({ name: m, revenue: revByMonth.get(m) || 0 })));
-    } catch (e) {
-      console.error("Failed to fetch admin data", e);
-      toast.error("Failed to load admin data");
+    } catch (error) {
+      toast.error("Failed to fetch admin data");
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddTokens = async (userId: string, currentTokens: number) => {
-    const { error } = await supabase.from("profiles").update({ tokens: currentTokens + 10 }).eq("user_id", userId);
-    if (error) toast.error("Failed to add tokens");
-    else { toast.success("Added 10 tokens"); fetchData(); }
+    // Mock action
+    toast.success("Added 10 tokens (Mock)");
+    // In a real app, you'd call an API endpoint here
   };
 
   const handleRemoveTokens = async (userId: string, currentTokens: number) => {
-    const { error } = await supabase.from("profiles").update({ tokens: Math.max(0, currentTokens - 10) }).eq("user_id", userId);
-    if (error) toast.error("Failed to remove tokens");
-    else { toast.success("Removed 10 tokens"); fetchData(); }
+    // Mock action
+    toast.success("Removed 10 tokens (Mock)");
   };
 
   const filteredUsers = users.filter((u) => u.name.toLowerCase().includes(search.toLowerCase()));

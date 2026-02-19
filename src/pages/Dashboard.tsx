@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { Search, Download, Coins, Info, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const TOKEN_COST: Record<string, number> = {
@@ -15,7 +14,7 @@ const TOKEN_COST: Record<string, number> = {
 const QUALITY_OPTIONS = ["360p", "720p", "1080p", "4k"] as const;
 
 const Dashboard = () => {
-  const { profile, session, refreshProfile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [url, setUrl] = useState("");
   const [videoInfo, setVideoInfo] = useState<null | {
     title: string;
@@ -36,12 +35,11 @@ const Dashboard = () => {
     setVideoInfo(null);
 
     try {
-      // Use Vercel API Route instead of Supabase Function
+      // Use Vercel API Route
       const response = await fetch("/api/video-info", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Send auth token if needed, though video-info might be public
         },
         body: JSON.stringify({ url }),
       });
@@ -61,28 +59,20 @@ const Dashboard = () => {
   };
 
   const handleDownload = async () => {
-    if (!videoInfo || !session) return;
-    const cost = TOKEN_COST[quality] || 1;
-    if (tokens < cost) {
-      toast.error(`Not enough tokens! ${quality} requires ${cost} token(s).`);
-      return;
-    }
+    if (!videoInfo) return;
+    
+    // In no-backend mode, we skip token checks or just assume success
+    // The useAuth hook provides infinite tokens for guest
 
     setDownloading(true);
     setError("");
 
     try {
-      // Get session token for authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      if (!token) throw new Error("Not authenticated");
-
+      // No-backend mode: bypass auth check
       const response = await fetch("/api/video-download", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ url, quality, title: videoInfo.title }),
       });
@@ -115,7 +105,7 @@ const Dashboard = () => {
           link.click();
           document.body.removeChild(link);
         }
-        toast.success(`Download started! ${data.tokenCost} token(s) used. ${data.tokensRemaining} remaining.`);
+        toast.success(`Download started!`);
         refreshProfile();
       }
     } catch (e: unknown) {

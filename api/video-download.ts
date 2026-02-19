@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import {
   extractVideoId,
   pickFormatForQuality,
@@ -159,29 +158,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return sendError(res, 405, "Method not allowed", "METHOD_NOT_ALLOWED");
   }
 
-  const supabaseUrl = "https://bmqbdgzyjtthjkhcsgt.supabase.co";
-  const supabaseServiceRole = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtcWJkZ3p5anR0aGpoa2hjc2d0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTQ3NjE3OSwiZXhwIjoyMDg3MDUyMTc5fQ." + "-vXTIAgohakmCU5UswhnH1_7yWmi1UVOZRTYwjY6ZsM";
-  if (!supabaseUrl || !supabaseServiceRole) {
-    return sendError(res, 500, "Server is missing Supabase credentials", "SERVER_MISCONFIGURED");
-  }
-
-  const token = getBearerToken(req);
-  if (!token) {
-    return sendError(res, 401, "Unauthorized", "UNAUTHORIZED");
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseServiceRole);
-
   try {
     const body = getBody(req);
-
-    const { data: authData, error: authError } = await supabase.auth.getUser(token);
-    const user = authData?.user;
-    if (authError || !user) {
-      const msg = authError ? authError.message : "User not found";
-      console.error("Auth error:", msg);
-      return sendError(res, 401, `Unauthorized: ${msg}`, "UNAUTHORIZED");
-    }
 
     const url = validateYouTubeUrl(body.url);
     if (!url) {
@@ -191,20 +169,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     const requestedQuality = (body.quality || "720p") as SupportedQuality;
     if (!ALLOWED_QUALITIES.has(requestedQuality)) {
       return sendError(res, 400, "Invalid quality. Use 360p, 720p, or 1080p.", "INVALID_QUALITY");
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("tokens")
-      .eq("user_id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return sendError(res, 404, "Profile not found", "PROFILE_NOT_FOUND");
-    }
-
-    if (profile.tokens < 1) {
-      return sendError(res, 403, "Not enough tokens", "INSUFFICIENT_TOKENS");
     }
 
     let downloadUrl: string | null = null;
@@ -239,31 +203,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       );
     }
 
-    const nextTokens = profile.tokens - 1;
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({ tokens: nextTokens })
-      .eq("user_id", user.id);
-
-    if (updateError) {
-      return sendError(res, 500, "Failed to deduct token", "TOKEN_DEDUCTION_FAILED");
-    }
+    // Skipped Supabase token deduction and history logging
 
     const safeTitle =
       typeof body.title === "string" && body.title.trim()
         ? body.title.trim()
         : (metadata?.title || "Unknown");
-
-    const { error: insertError } = await supabase.from("downloads").insert({
-      user_id: user.id,
-      video_url: url,
-      video_title: safeTitle,
-      quality: requestedQuality,
-    });
-
-    if (insertError) {
-      return sendError(res, 500, "Failed to save download history", "DOWNLOAD_LOG_FAILED");
-    }
 
     return res.status(200).json({
       title: metadata?.title || safeTitle || "Untitled",
@@ -274,6 +219,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       formatId: selectedFormat?.format_id || null,
       downloadUrl: downloadUrl,
       expiresNote: "Download URL may expire quickly. Start download immediately.",
+      // Legacy fields for compatibility
+      tokenCost: 0,
+      tokensRemaining: 9999
     });
   } catch (error) {
     const message = getMessage(error);

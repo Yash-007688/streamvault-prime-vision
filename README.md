@@ -3,7 +3,6 @@
 YouTube downloader web app with:
 - React frontend (Vite)
 - Node.js API routes (`/api/*`) for video metadata + download URL
-- Supabase auth + token system
 - `yt-dlp` for server-side extraction (no cobalt API dependency)
 
 ## What changed
@@ -119,9 +118,6 @@ Response:
 ```
 
 ### `POST /api/video-download`
-
-Headers:
-- `Authorization: Bearer <supabase_access_token>`
 
 Request:
 
