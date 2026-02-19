@@ -12,6 +12,7 @@ const TOKEN_COST: Record<string, number> = {
 };
 
 const QUALITY_OPTIONS = ["360p", "720p", "1080p", "4k"] as const;
+const FORMAT_OPTIONS = ["mp4", "mp3", "mkv"] as const;
 
 const Dashboard = () => {
   const { profile, refreshProfile } = useAuth();
@@ -23,6 +24,7 @@ const Dashboard = () => {
     author: string;
   }>(null);
   const [quality, setQuality] = useState("720p");
+  const [format, setFormat] = useState("mp4");
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
@@ -83,7 +85,7 @@ const Dashboard = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url, quality, title: videoInfo.title }),
+        body: JSON.stringify({ url, quality, format, title: videoInfo.title }),
       });
 
       const data = await response.json();
@@ -98,7 +100,7 @@ const Dashboard = () => {
           const blobUrl = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = blobUrl;
-          link.download = `${videoInfo.title || "video"}.mp4`;
+          link.download = `${videoInfo.title || "video"}.${format}`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -109,7 +111,7 @@ const Dashboard = () => {
           link.href = data.downloadUrl;
           link.target = "_blank";
           link.rel = "noopener noreferrer";
-          link.setAttribute("download", `${videoInfo.title || "video"}.mp4`);
+          link.setAttribute("download", `${videoInfo.title || "video"}.${format}`);
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -203,23 +205,43 @@ const Dashboard = () => {
                   <h3 className="font-semibold text-foreground mb-1">{videoInfo.title}</h3>
                   <p className="text-sm text-muted-foreground mb-4">{videoInfo.author}</p>
 
-                  {/* Quality Select */}
+                  {/* Format Select */}
                   <div className="flex items-center gap-3 mb-4">
-                    <span className="text-sm text-muted-foreground">Quality:</span>
-                    {QUALITY_OPTIONS.map((q) => (
+                    <span className="text-sm text-muted-foreground">Format:</span>
+                    {FORMAT_OPTIONS.map((f) => (
                       <button
-                        key={q}
-                        onClick={() => setQuality(q)}
+                        key={f}
+                        onClick={() => setFormat(f)}
                         className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                          quality === q
+                          format === f
                             ? "bg-primary text-primary-foreground"
                             : "bg-secondary text-muted-foreground hover:text-foreground"
                         }`}
                       >
-                        {q} ({TOKEN_COST[q]}t)
+                        {f.toUpperCase()}
                       </button>
                     ))}
                   </div>
+
+                  {/* Quality Select */}
+                  {format !== 'mp3' && (
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-sm text-muted-foreground">Quality:</span>
+                      {QUALITY_OPTIONS.map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => setQuality(q)}
+                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                            quality === q
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {q} ({TOKEN_COST[q]}t)
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   <button
                     onClick={handleDownload}

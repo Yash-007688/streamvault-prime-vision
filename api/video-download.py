@@ -63,6 +63,7 @@ class handler(BaseHTTPRequestHandler):
             
             url = body.get('url')
             quality = body.get('quality', '720p')
+            format_type = body.get('format', 'mp4') # mp4, mp3, mkv
             
             if not url:
                 return send_error(self, 400, "Invalid YouTube URL", "INVALID_URL")
@@ -75,12 +76,57 @@ class handler(BaseHTTPRequestHandler):
             
             errors = []
 
-            # 1. Try yt-dlp (Python Library)
-            if yt_dlp:
+            # 1. Try Cobalt (First priority for MP3 conversion support)
+            # We prioritize Cobalt for MP3 because it handles server-side conversion which we can't do easily in serverless
+            if format_type == 'mp3' and requests:
+                try:
+                    cobalt_endpoints = [
+                        "https://api.cobalt.tools/api/json",
+                        "https://cobalt.kanzen.me/api/json",
+                        "https://cobalt.gutenberg.rocks/api/json",
+                        "https://hyperspace.onrender.com/api/json",
+                        "https://api.server.social/api/json",
+                        "https://cobalt.154.53.56.156.sslip.io/api/json",
+                    ]
+                    
+                    for endpoint in cobalt_endpoints:
+                        try:
+                            payload = {
+                                "url": url,
+                                "isAudioOnly": True,
+                                "aFormat": "mp3",
+                                "filenameStyle": "pretty"
+                            }
+                            headers = {
+                                "Accept": "application/json",
+                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                            }
+                            resp = requests.post(endpoint, json=payload, headers=headers, timeout=15)
+                            
+                            if resp.status_code == 200:
+                                data = resp.json()
+                                if data.get('url'):
+                                    download_url = data.get('url')
+                                    break
+                                if data.get('picker'):
+                                    for item in data['picker']:
+                                        if item.get('url'):
+                                            download_url = item.get('url')
+                                            break
+                                    if download_url: break
+                            else:
+                                errors.append(f"Cobalt {endpoint} status {resp.status_code}")
+                        except Exception as e:
+                            errors.append(f"Cobalt {endpoint} error: {str(e)}")
+                            continue
+                except Exception as e:
+                    errors.append(f"Cobalt MP3 error: {str(e)}")
+
+            # 2. Try yt-dlp (Python Library)
+            if not download_url and yt_dlp:
                 try:
                     # Generic options to maximize success
                     ydl_opts = {
-                        'format': f'best[ext=mp4][height<={target_height}][vcodec!=none][acodec!=none]/best[height<={target_height}]/best',
                         'quiet': True,
                         'no_warnings': True,
                         'skip_download': True,
@@ -90,6 +136,13 @@ class handler(BaseHTTPRequestHandler):
                             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                         }
                     }
+
+                    if format_type == 'mp3':
+                        ydl_opts['format'] = 'bestaudio/best'
+                    elif format_type == 'mkv':
+                         ydl_opts['format'] = f'bestvideo[ext=mkv]+bestaudio/best[ext=mkv]/best'
+                    else:
+                         ydl_opts['format'] = f'best[ext=mp4][height<={target_height}][vcodec!=none][acodec!=none]/best[height<={target_height}]/best'
                     
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         info = ydl.extract_info(url, download=False)
@@ -99,18 +152,28 @@ class handler(BaseHTTPRequestHandler):
                             thumbnail = info.get('thumbnail', thumbnail)
                             author = info.get('uploader', author)
                         elif 'formats' in info:
-                            # Manually pick best progressive if automatic selection failed to give a direct url
                             formats = info.get('formats', [])
-                            # Filter for mp4, with video and audio, and height <= target
-                            candidates = [f for f in formats if f.get('ext') == 'mp4' and f.get('vcodec') != 'none' and f.get('acodec') != 'none' and f.get('height', 0) <= target_height]
+                            candidates = []
                             
-                            if not candidates:
+                            if format_type == 'mp3':
+                                # Look for audio only
+                                candidates = [f for f in formats if f.get('vcodec') == 'none' and f.get('acodec') != 'none']
+                            else:
+                                # Video + Audio
+                                ext = 'mp4' if format_type == 'mp4' else 'webm' # mkv often is webm on YT
+                                candidates = [f for f in formats if f.get('ext') == ext and f.get('vcodec') != 'none' and f.get('acodec') != 'none' and f.get('height', 0) <= target_height]
+                            
+                            if not candidates and format_type != 'mp3':
                                 # Fallback: any video+audio
                                 candidates = [f for f in formats if f.get('vcodec') != 'none' and f.get('acodec') != 'none']
                             
                             if candidates:
-                                # Sort by height descending
-                                candidates.sort(key=lambda x: x.get('height', 0), reverse=True)
+                                # Sort by height descending (or bitrate for audio)
+                                if format_type == 'mp3':
+                                    candidates.sort(key=lambda x: x.get('abr', 0) or 0, reverse=True)
+                                else:
+                                    candidates.sort(key=lambda x: x.get('height', 0), reverse=True)
+                                    
                                 download_url = candidates[0].get('url')
                                 title = info.get('title', title)
                                 thumbnail = info.get('thumbnail', thumbnail)
@@ -118,10 +181,9 @@ class handler(BaseHTTPRequestHandler):
                 except Exception as e:
                     errors.append(f"yt-dlp error: {str(e)}")
 
-            # 2. Try Cobalt (Fallback)
-            if not download_url and requests:
+            # 3. Try Cobalt (Fallback for Video or if MP3 failed in step 1)
+            if not download_url and requests and format_type != 'mp3': # If mp3 failed in step 1, we might retry or just skip to pytube
                 try:
-                    # Updated list of Cobalt instances (removed dead ones, added new ones)
                     cobalt_endpoints = [
                         "https://api.cobalt.tools/api/json",
                         "https://cobalt.kanzen.me/api/json",
@@ -148,6 +210,8 @@ class handler(BaseHTTPRequestHandler):
                                 "filenameStyle": "pretty",
                                 "vCodec": "h264"
                             }
+                            # Cobalt doesn't strictly support 'mkv' output via simple json, so we stick to mp4/h264
+                            
                             headers = {
                                 "Accept": "application/json",
                                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -173,7 +237,7 @@ class handler(BaseHTTPRequestHandler):
                 except Exception as e:
                     errors.append(f"Cobalt error: {str(e)}")
 
-            # 3. Try Pytube (Fallback)
+            # 4. Try Pytube (Fallback)
             if not download_url and YouTube:
                 try:
                     # Try with different clients if default fails
@@ -182,8 +246,13 @@ class handler(BaseHTTPRequestHandler):
                     for client in clients_to_try:
                         try:
                             yt = YouTube(url, use_oauth=False, allow_oauth_cache=False, client=client)
-                            streams = yt.streams.filter(progressive=True, file_extension='mp4')
-                            stream = streams.order_by('resolution').desc().first()
+                            
+                            if format_type == 'mp3':
+                                streams = yt.streams.filter(only_audio=True)
+                                stream = streams.order_by('abr').desc().first()
+                            else:
+                                streams = yt.streams.filter(progressive=True, file_extension='mp4')
+                                stream = streams.order_by('resolution').desc().first()
                             
                             if stream:
                                 download_url = stream.url
@@ -193,6 +262,7 @@ class handler(BaseHTTPRequestHandler):
                                 break # Success
                         except:
                             continue
+
 
                     if not download_url:
                          # Last ditch: try standard init with no client override
