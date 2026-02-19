@@ -36,12 +36,20 @@ const Dashboard = () => {
     setVideoInfo(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("get-video-info", {
-        body: { url },
+      // Use Vercel API Route instead of Supabase Function
+      const response = await fetch("/api/video-info", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Send auth token if needed, though video-info might be public
+        },
+        body: JSON.stringify({ url }),
       });
 
-      if (fnError) throw new Error(fnError.message);
-      if (data?.error) throw new Error(data.error);
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || "Failed to fetch video info");
+      
       setVideoInfo(data);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to fetch video info";
@@ -64,12 +72,24 @@ const Dashboard = () => {
     setError("");
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("download-video", {
-        body: { url, quality, title: videoInfo.title },
+      // Get session token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) throw new Error("Not authenticated");
+
+      const response = await fetch("/api/video-download", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ url, quality, title: videoInfo.title }),
       });
 
-      if (fnError) throw new Error(fnError.message);
-      if (data?.error) throw new Error(data.error);
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || "Download failed");
 
       if (data?.downloadUrl) {
         // Fetch the file as a blob to force a real download

@@ -7,7 +7,7 @@ import {
   type SupportedQuality,
   type YtDlpInfo,
   type YtDlpFormat,
-} from "./_lib/ytdlp.js";
+} from "./_lib/ytdlp.ts";
 
 type ApiRequest = {
   method?: string;
