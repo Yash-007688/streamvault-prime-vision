@@ -109,6 +109,7 @@ export async function runYtDlpMetadata(url: string): Promise<YtDlpInfo> {
     "--no-warnings",
     "--no-call-home",
     "--no-playlist",
+    "--",
     url,
   ];
 
@@ -156,6 +157,75 @@ export async function runYtDlpMetadata(url: string): Promise<YtDlpInfo> {
       } catch {
         reject(new Error("Invalid yt-dlp JSON output"));
       }
+    });
+  });
+}
+
+export async function getChannelAvatar(channelUrl: string): Promise<string | null> {
+  const binaryPath = getBinaryPath();
+
+  const args = [
+    "--dump-single-json",
+    "--flat-playlist",
+    "--playlist-items", "0",
+    "--no-warnings",
+    "--no-call-home",
+    "--",
+    channelUrl,
+  ];
+
+  return new Promise((resolve) => {
+    const proc = spawn(binaryPath, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    // We don't reject on error for avatar, just return null to avoid breaking the main flow
+    
+    const timer = setTimeout(() => {
+      proc.kill("SIGKILL");
+      resolve(null);
+    }, 10000); // 10s timeout for avatar
+
+    proc.stdout.setEncoding("utf8");
+    proc.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+
+    proc.on("close", (code) => {
+      clearTimeout(timer);
+      if (code !== 0) {
+        resolve(null);
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(stdout);
+        // Look for thumbnails in channel metadata
+        if (parsed.thumbnails && Array.isArray(parsed.thumbnails)) {
+          // Filter for avatar-like URLs (usually sqaure, no crop params if possible, or specific patterns)
+          // Based on observation: avatars don't usually have 'fcrop64' which is for banners
+          // And we want the largest one (last one usually)
+          const avatars = parsed.thumbnails.filter((t: any) => 
+            !t.url.includes("fcrop64") && 
+            (t.url.includes("ggpht.com") || t.url.includes("googleusercontent.com"))
+          );
+          
+          if (avatars.length > 0) {
+             // Return the last one (usually highest res)
+             resolve(avatars[avatars.length - 1].url);
+             return;
+          }
+        }
+        resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
+    
+    proc.on("error", () => {
+        clearTimeout(timer);
+        resolve(null);
     });
   });
 }

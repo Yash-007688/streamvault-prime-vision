@@ -213,10 +213,15 @@ const Dashboard = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground mb-1">{videoInfo.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-4 flex items-center gap-2">
-                    <User className="h-4 w-4" />
+                  <div className="text-sm text-muted-foreground mb-4 flex items-center gap-2">
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={videoInfo.channel_logo || ""} alt={videoInfo.channel || videoInfo.author} />
+                      <AvatarFallback>
+                        <User className="h-3 w-3" />
+                      </AvatarFallback>
+                    </Avatar>
                     <span className="font-medium text-foreground/80">{videoInfo.channel || videoInfo.author}</span>
-                  </p>
+                  </div>
 
                   {/* Format Select */}
                   <div className="flex items-center gap-3 mb-4">

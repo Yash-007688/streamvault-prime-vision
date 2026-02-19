@@ -69,6 +69,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     }
 
     let metadata: YtDlpInfo | undefined;
+    let channelLogo: string | null = null;
     let availableFormats: Array<{
       quality: SupportedQuality;
       formatId: string | null;
@@ -125,6 +126,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       videoId: metadata?.id || null,
       author: metadata?.uploader || metadata?.channel || "Unknown",
       channel: metadata?.channel || metadata?.uploader || "Unknown",
+      channel_logo: channelLogo,
       availableFormats,
     });
   } catch (error) {
