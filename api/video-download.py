@@ -86,6 +86,9 @@ class handler(BaseHTTPRequestHandler):
                         'skip_download': True,
                         'nocheckcertificate': True,
                         'source_address': '0.0.0.0', # Force IPv4
+                        'http_headers': {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        }
                     }
                     
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -118,13 +121,14 @@ class handler(BaseHTTPRequestHandler):
             # 2. Try Cobalt (Fallback)
             if not download_url and requests:
                 try:
+                    # Updated list of Cobalt instances (removed dead ones, added new ones)
                     cobalt_endpoints = [
                         "https://api.cobalt.tools/api/json",
-                        "https://co.wuk.sh/api/json",
-                        "https://cobalt.api.red/",
-                        "https://api.wuk.sh/",
-                        "https://cobalt.tools/api/json",
-                        "https://api.douyin.wtf/api/json"
+                        "https://cobalt.kanzen.me/api/json",
+                        "https://cobalt.gutenberg.rocks/api/json",
+                        "https://hyperspace.onrender.com/api/json",
+                        "https://api.server.social/api/json",
+                        "https://cobalt.154.53.56.156.sslip.io/api/json",
                     ]
                     
                     quality_map = {
@@ -148,7 +152,8 @@ class handler(BaseHTTPRequestHandler):
                                 "Accept": "application/json",
                                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                             }
-                            resp = requests.post(endpoint, json=payload, headers=headers, timeout=6)
+                            resp = requests.post(endpoint, json=payload, headers=headers, timeout=10)
+                            
                             if resp.status_code == 200:
                                 data = resp.json()
                                 if data.get('url'):
@@ -160,6 +165,8 @@ class handler(BaseHTTPRequestHandler):
                                             download_url = item.get('url')
                                             break
                                     if download_url: break
+                            else:
+                                errors.append(f"Cobalt {endpoint} status {resp.status_code}")
                         except Exception as e:
                             errors.append(f"Cobalt {endpoint} error: {str(e)}")
                             continue
@@ -169,24 +176,33 @@ class handler(BaseHTTPRequestHandler):
             # 3. Try Pytube (Fallback)
             if not download_url and YouTube:
                 try:
-                    yt = YouTube(url, use_oauth=False, allow_oauth_cache=False)
-                    # Try getting streams
-                    streams = yt.streams.filter(progressive=True, file_extension='mp4')
-                    stream = streams.order_by('resolution').desc().first()
+                    # Try with different clients if default fails
+                    clients_to_try = ['ANDROID', 'WEB', 'ANDROID_CREATOR']
                     
-                    if stream:
-                        download_url = stream.url
-                        title = yt.title or title
-                        thumbnail = yt.thumbnail_url or thumbnail
-                        author = yt.author or author
-                    else:
-                         # Fallback to any mp4 stream even if not progressive (might lack audio)
-                         # but better than nothing for some users
+                    for client in clients_to_try:
+                        try:
+                            yt = YouTube(url, use_oauth=False, allow_oauth_cache=False, client=client)
+                            streams = yt.streams.filter(progressive=True, file_extension='mp4')
+                            stream = streams.order_by('resolution').desc().first()
+                            
+                            if stream:
+                                download_url = stream.url
+                                title = yt.title or title
+                                thumbnail = yt.thumbnail_url or thumbnail
+                                author = yt.author or author
+                                break # Success
+                        except:
+                            continue
+
+                    if not download_url:
+                         # Last ditch: try standard init with no client override
+                         yt = YouTube(url, use_oauth=False, allow_oauth_cache=False)
                          stream = yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first()
                          if stream:
                              download_url = stream.url
                 except Exception as e:
                     errors.append(f"Pytube error: {str(e)}")
+
 
             if not download_url:
                 error_msg = "Could not process video. Errors: " + "; ".join(errors)
