@@ -197,12 +197,14 @@ class handler(BaseHTTPRequestHandler):
             if not download_url and requests and format_type != 'mp3': # If mp3 failed in step 1, we might retry or just skip to pytube
                 try:
                     cobalt_endpoints = [
+                        "https://cobalt.api.timelessnesses.me/api/json",
+                        "https://api-dl.cgm.rs/api/json",
+                        "https://cobalt.synzr.space/api/json",
+                        "https://capi.oak.li/api/json",
+                        "https://co.tskau.team/api/json",
+                        "https://api.co.rooot.gay/api/json",
                         "https://api.cobalt.tools/api/json",
                         "https://cobalt.kanzen.me/api/json",
-                        "https://cobalt.gutenberg.rocks/api/json",
-                        "https://hyperspace.onrender.com/api/json",
-                        "https://api.server.social/api/json",
-                        "https://cobalt.154.53.56.156.sslip.io/api/json",
                     ]
                     
                     quality_map = {
@@ -226,7 +228,9 @@ class handler(BaseHTTPRequestHandler):
                             
                             headers = {
                                 "Accept": "application/json",
-                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                                "Origin": "https://cobalt.tools",
+                                "Referer": "https://cobalt.tools/"
                             }
                             resp = requests.post(endpoint, json=payload, headers=headers, timeout=10)
                             
@@ -294,6 +298,7 @@ class handler(BaseHTTPRequestHandler):
                 "title": title,
                 "thumbnail": thumbnail,
                 "author": author,
+                "_version": "v2-cobalt-fix-2026-02-20",
                 "qualityRequested": quality,
                 "qualityResolved": f"{target_height}p", 
                 "formatId": "python-processed",
