@@ -173,6 +173,9 @@ export async function getChannelAvatar(channelUrl: string): Promise<string | nul
     "--playlist-items", "0",
     "--no-warnings",
     "--no-call-home",
+    "--add-header", "User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "--add-header", "Referer:https://www.youtube.com/",
+    "--extractor-args", "youtube:player_client=android,ios,web",
     "--",
     channelUrl,
   ];

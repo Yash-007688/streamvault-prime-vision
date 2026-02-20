@@ -186,9 +186,18 @@ const Dashboard = () => {
 
           {/* Error */}
           {error && (
-            <div className="glass-card p-4 mb-6 border border-destructive/30 flex items-center gap-3">
-              <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
-              <p className="text-sm text-destructive">{error}</p>
+            <div className="glass-card p-4 mb-6 border border-destructive/30 flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                <p className="text-sm text-destructive font-medium">Download failed</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                The server might be busy or updating. Please try again in a few seconds.
+              </p>
+              <details className="text-xs text-destructive/80 font-mono bg-destructive/5 p-2 rounded cursor-pointer">
+                <summary className="mb-1 hover:underline">Show technical details</summary>
+                {error}
+              </details>
             </div>
           )}
 
