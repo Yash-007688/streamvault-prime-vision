@@ -81,12 +81,14 @@ class handler(BaseHTTPRequestHandler):
             if format_type == 'mp3' and requests:
                 try:
                     cobalt_endpoints = [
+                        "https://cobalt.api.timelessnesses.me/api/json",
+                        "https://api-dl.cgm.rs/api/json",
+                        "https://cobalt.synzr.space/api/json",
+                        "https://capi.oak.li/api/json",
+                        "https://co.tskau.team/api/json",
+                        "https://api.co.rooot.gay/api/json",
                         "https://api.cobalt.tools/api/json",
                         "https://cobalt.kanzen.me/api/json",
-                        "https://cobalt.gutenberg.rocks/api/json",
-                        "https://hyperspace.onrender.com/api/json",
-                        "https://api.server.social/api/json",
-                        "https://cobalt.154.53.56.156.sslip.io/api/json",
                     ]
                     
                     for endpoint in cobalt_endpoints:
@@ -99,7 +101,9 @@ class handler(BaseHTTPRequestHandler):
                             }
                             headers = {
                                 "Accept": "application/json",
-                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                                "Origin": "https://cobalt.tools",
+                                "Referer": "https://cobalt.tools/"
                             }
                             resp = requests.post(endpoint, json=payload, headers=headers, timeout=15)
                             
@@ -132,8 +136,16 @@ class handler(BaseHTTPRequestHandler):
                         'skip_download': True,
                         'nocheckcertificate': True,
                         'source_address': '0.0.0.0', # Force IPv4
+                        'extractor_args': {
+                            'youtube': {
+                                'player_client': ['android', 'ios', 'web']
+                            }
+                        },
                         'http_headers': {
                             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                            'Accept-Language': 'en-US,en;q=0.9',
+                            'Referer': 'https://www.youtube.com/',
                         }
                     }
 
