@@ -1,1 +1,4 @@
 project_id = "hccuampjmcujtgexandw"
+
+[functions.ytdlp-proxy]
+verify_jwt = false

@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ytdlp-api
+    runtime: node
+    plan: free
+    buildCommand: "npm install && apt-get update && apt-get install -y python3 ffmpeg && pip3 install yt-dlp"
+    startCommand: "npm start"
+    envVars:
+      - key: PORT
+        value: 3000

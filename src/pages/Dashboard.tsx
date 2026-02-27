@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
 
 const QUALITY_OPTIONS = ["360p", "720p", "1080p", "4k"] as const;
 const FORMAT_OPTIONS = ["mp4", "mp3", "mkv"] as const;
@@ -32,18 +33,12 @@ const Dashboard = () => {
     setVideoInfo(null);
 
     try {
-      // Use Vercel API Route
-      const response = await fetch("/api/video-info", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url: searchUrl }),
+      const { data, error: fnError } = await supabase.functions.invoke("ytdlp-proxy", {
+        body: { action: "info", url: searchUrl },
       });
 
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || "Failed to fetch video info");
+      if (fnError) throw new Error(fnError.message || "Failed to fetch video info");
+      if (data?.error) throw new Error(data.error);
       
       setVideoInfo(data);
     } catch (e: unknown) {
@@ -73,18 +68,12 @@ const Dashboard = () => {
     setError("");
 
     try {
-      // No-backend mode: bypass auth check
-      const response = await fetch("/api/video-download", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url, quality, format, title: videoInfo.title }),
+      const { data, error: fnError } = await supabase.functions.invoke("ytdlp-proxy", {
+        body: { action: "download", url, quality, format, title: videoInfo.title },
       });
 
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || "Download failed");
+      if (fnError) throw new Error(fnError.message || "Download failed");
+      if (data?.error) throw new Error(data.error);
 
       if (data?.downloadUrl) {
         // Fetch the file as a blob to force a real download
