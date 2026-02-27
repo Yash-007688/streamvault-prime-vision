@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: streamvault-frontend
+    env: static
+    buildCommand: bun install && bun run build
+    staticPublishPath: dist
